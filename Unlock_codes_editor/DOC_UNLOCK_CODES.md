@@ -27,9 +27,9 @@ The code table ended up at 0x167C70 in all tested dumps, though the script searc
 
 ### Option 1: HTML Editor in Browser
 
-File: `editeur_codes.html`
+File: `unlock-codes-editor.html`
 
-1. Open `editeur_codes.html` in any browser (Chrome, Firefox, Safari)
+1. Open `unlock-codes-editor.html` in any browser (Chrome, Firefox, Safari)
 2. Drag your .bin dump onto it, or click to choose
 3. The editor displays all codes with their indexes (#0, #1, etc.)
 4. Click a code to edit it (8 digits only)
@@ -39,11 +39,11 @@ No files are sent anywhere — everything happens in your browser.
 
 ### Option 2: Python Command-Line
 
-File: `codes.py`
+File: `unlock-codes-editor.py`
 
 View all codes:
 ```bash
-python codes.py mydump.bin --list
+python unlock-codes-editor.py mydump.bin --list
 ```
 
 This shows:
@@ -59,7 +59,7 @@ This shows:
 
 Change one or more codes:
 ```bash
-python codes.py mydump.bin 46746507 11112222 17556258 33334444
+python unlock-codes-editor.py mydump.bin 46746507 11112222 17556258 33334444
 ```
 
 The format is: old code, new code (pairs). Multiple pairs work fine.
@@ -73,18 +73,18 @@ Done! File ready to flash: mydump-CODES.bin
 
 Choose output file:
 ```bash
-python codes.py mydump.bin 46746507 11112222 -o result.bin
+python unlock-codes-editor.py mydump.bin 46746507 11112222 -o result.bin
 ```
 
 ## Practical examples
 
 Scenario 1: You want to see all codes.
 
-With HTML: open `editeur_codes.html`, drag your dump, done.
+With HTML: open `unlock-codes-editor.html`, drag your dump, done.
 
 With Python:
 ```bash
-python codes.py mydump.bin --list | grep -E "^  (70|85)"
+python unlock-codes-editor.py mydump.bin --list | grep -E "^  (70|85)"
 ```
 
 Scenario 2: You want to unlock the hat at index 70.
@@ -95,7 +95,7 @@ With HTML: click index 70, type 00000000, OK, download, flash.
 
 With Python:
 ```bash
-python codes.py mydump.bin 46746507 00000000
+python unlock-codes-editor.py mydump.bin 46746507 00000000
 ```
 
 Scenario 3: You want to create 5 new codes.
@@ -104,7 +104,7 @@ With HTML: modify the 5 codes you want, one by one.
 
 With Python:
 ```bash
-python codes.py mydump.bin \
+python unlock-codes-editor.py mydump.bin \
   10101010 11111111 \
   20202020 22222222 \
   30303030 33333333 \
@@ -118,14 +118,14 @@ Don't forget to save a backup before testing. Always keep one.
 
 Code entered incorrectly (less than 8 digits): the HTML editor will flag it in red.
 
-Confused about old/new in the CLI: the order is `python codes.py dump.bin OLD NEW`. Order matters.
+Confused about old/new in the CLI: the order is `python unlock-codes-editor.py dump.bin OLD NEW`. Order matters.
 
 ## Associated files
 
 | File | Role |
 |------|------|
-| editeur_codes.html | Browser interface (drag-drop, visual editing) |
-| codes.py | Python CLI (scan, list, modify, validate) |
+| unlock-codes-editor.html | Browser interface (drag-drop, visual editing) |
+| unlock-codes-editor.py | Python CLI (scan, list, modify, validate) |
 
 Technical notes:
 - Scan range: 0x11000 to 0x110000 (XIP zone)
@@ -164,9 +164,9 @@ La table de codes s'est trouvee systematiquement a 0x167C70 dans tous les dumps 
 
 ### Option 1 : Editeur HTML dans le navigateur
 
-Fichier : `editeur_codes.html`
+Fichier : `unlock-codes-editor.html`
 
-1. Ouvre `editeur_codes.html` dans n'importe quel navigateur (Chrome, Firefox, Safari)
+1. Ouvre `unlock-codes-editor.html` dans n'importe quel navigateur (Chrome, Firefox, Safari)
 2. Glisse ton dump .bin dessus, ou clique pour choisir
 3. L'editeur affiche tous les codes avec leurs index (#0, #1, etc.)
 4. Clique un code pour le modifier (8 chiffres uniquement)
@@ -176,11 +176,11 @@ Aucun fichier n'est envoye nulle part — tout se fait dans ton navigateur.
 
 ### Option 2 : Script Python en ligne de commande
 
-Fichier : `codes.py`
+Fichier : `unlock-codes-editor.py`
 
 Voir tous les codes :
 ```bash
-python codes.py mondump.bin --liste
+python unlock-codes-editor.py mondump.bin --liste
 ```
 
 Affiche :
@@ -196,7 +196,7 @@ Affiche :
 
 Changer un ou plusieurs codes :
 ```bash
-python codes.py mondump.bin 46746507 11112222 17556258 33334444
+python unlock-codes-editor.py mondump.bin 46746507 11112222 17556258 33334444
 ```
 
 Le format est : ancien code, nouveau code (paires). Plusieurs paires, pas de souci.
@@ -210,18 +210,18 @@ Termine ! Fichier pret a flasher : mondump-CODES.bin
 
 Choisir le fichier de sortie :
 ```bash
-python codes.py mondump.bin 46746507 11112222 -o resultat.bin
+python unlock-codes-editor.py mondump.bin 46746507 11112222 -o resultat.bin
 ```
 
 ## Exemples pratiques
 
 Scenario 1 : Tu veux voir tous les codes.
 
-Avec l'HTML : ouvre `editeur_codes.html`, glisse ton dump, done.
+Avec l'HTML : ouvre `unlock-codes-editor.html`, glisse ton dump, done.
 
 Avec Python :
 ```bash
-python codes.py mondump.bin --liste | grep -E "^  (70|85)"
+python unlock-codes-editor.py mondump.bin --liste | grep -E "^  (70|85)"
 ```
 
 Scenario 2 : Tu veux deverrouiller le chapeau a l'index 70.
@@ -232,7 +232,7 @@ Avec l'HTML : clique l'index 70, tape 00000000, OK, telecharge, flashe.
 
 Avec Python :
 ```bash
-python codes.py mondump.bin 46746507 00000000
+python unlock-codes-editor.py mondump.bin 46746507 00000000
 ```
 
 Scenario 3 : Tu veux creer 5 nouveaux codes.
@@ -241,7 +241,7 @@ Avec l'HTML : modifie les 5 codes que tu veux, un par un.
 
 Avec Python :
 ```bash
-python codes.py mondump.bin \
+python unlock-codes-editor.py mondump.bin \
   10101010 11111111 \
   20202020 22222222 \
   30303030 33333333 \
@@ -255,14 +255,14 @@ N'oublie pas de faire une sauvegarde avant de tester. Garde toujours une copie.
 
 Code entre incorrectement (moins de 8 chiffres) : l'editeur HTML va le signaler en rouge.
 
-Confusion ancien/nouveau dans la CLI : l'ordre est `python codes.py dump.bin ANCIEN NOUVEAU`. L'ordre compte.
+Confusion ancien/nouveau dans la CLI : l'ordre est `python unlock-codes-editor.py dump.bin ANCIEN NOUVEAU`. L'ordre compte.
 
 ## Fichiers associes
 
 | Fichier | Role |
 |---------|------|
-| editeur_codes.html | Interface navigateur (drag-drop, edition visuelle) |
-| codes.py | CLI Python (scan, liste, modification, validation) |
+| unlock-codes-editor.html | Interface navigateur (drag-drop, edition visuelle) |
+| unlock-codes-editor.py | CLI Python (scan, liste, modification, validation) |
 
 Notes techniques :
 - Plage de scan : 0x11000 a 0x110000 (zone XIP)

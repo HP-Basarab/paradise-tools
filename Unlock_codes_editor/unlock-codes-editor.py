@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-codes.py - Changer les codes d'unlock (mots de passe numeriques) d'un Tamagotchi Paradise.
+unlock-codes-editor.py - Changer les codes d'unlock (mots de passe numeriques) d'un Tamagotchi Paradise.
 
 Les codes sont stockes en clair (ASCII, 8 chiffres) dans le firmware. Les changer
 = reecrire 8 octets, sans aucun checksum a recalculer.
 
 UTILISATION
 -----------
-  Voir tous les codes :       python codes.py mondump.bin --liste
-  Changer un code :           python codes.py mondump.bin 46746507 11112222
-  Plusieurs d'un coup :       python codes.py mondump.bin 46746507 11112222 17556258 33334444
+  Voir tous les codes :       python unlock-codes-editor.py mondump.bin --liste
+  Changer un code :           python unlock-codes-editor.py mondump.bin 46746507 11112222
+  Plusieurs d'un coup :       python unlock-codes-editor.py mondump.bin 46746507 11112222 17556258 33334444
   Sortie (defaut <nom>-CODES.bin) :  ... -o resultat.bin
 
 Le nouveau code doit faire 8 chiffres.
@@ -41,8 +41,8 @@ def lire_codes(buf):
 def main():
     p=argparse.ArgumentParser(description="Changer les codes d'unlock d'un Tamagotchi Paradise.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='Exemples :\n  python codes.py mondump.bin --liste\n'
-               '  python codes.py mondump.bin 46746507 11112222\n')
+        epilog='Exemples :\n  python unlock-codes-editor.py mondump.bin --liste\n'
+               '  python unlock-codes-editor.py mondump.bin 46746507 11112222\n')
     p.add_argument("fichier")
     p.add_argument("paires", nargs="*", help="paires : ANCIEN_CODE NOUVEAU_CODE")
     p.add_argument("-l","--liste", action="store_true", help="afficher tous les codes (index + code)")

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patcheur de Langue — Tamagotchi Paradise</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2129;
+    --panel2: #232d38;
+    --accent: #4ecdc4;
+    --accent2: #ff6b9d;
+    --text: #e8eef2;
+    --muted: #8a99a8;
+    --ok: #6bc77d;
+    --warn: #ffc857;
+    --err: #ff6b6b;
+    --border: #2d3947;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.5;
+  }
+  .container { max-width: 640px; margin: 0 auto; }
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+
+  #drop {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    background: var(--panel);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  #drop.over {
+    border-color: var(--accent);
+    background: var(--panel2);
+    transform: scale(1.01);
+  }
+  #drop .icon { font-size: 3rem; margin-bottom: 12px; }
+  #drop .hint { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+  input[type=file] { display: none; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+  .row + .row { border-top: 1px solid var(--border); }
+  .label { color: var(--muted); font-size: 0.85rem; }
+  .value { font-family: "SF Mono", Monaco, monospace; font-size: 0.9rem; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .badge.ok { background: rgba(107,199,125,0.15); color: var(--ok); }
+  .badge.warn { background: rgba(255,200,87,0.15); color: var(--warn); }
+  .badge.err { background: rgba(255,107,107,0.15); color: var(--err); }
+
+  label.field { display: block; margin-top: 16px; }
+  label.field .label { display: block; margin-bottom: 6px; }
+  select {
+    width: 100%; padding: 12px; border-radius: 10px;
+    background: var(--panel2); color: var(--text);
+    border: 1px solid var(--border); font-size: 1rem;
+  }
+
+  button {
+    width: 100%; margin-top: 20px; padding: 14px;
+    border: none; border-radius: 12px; font-size: 1rem; font-weight: 600;
+    background: linear-gradient(135deg, var(--accent), #3aa89f);
+    color: #06231f; cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .log {
+    margin-top: 16px; font-family: "SF Mono", Monaco, monospace;
+    font-size: 0.82rem; color: var(--muted); white-space: pre-wrap;
+  }
+  .footer { margin-top: 24px; color: var(--muted); font-size: 0.78rem; text-align: center; }
+  code { background: var(--panel2); padding: 1px 6px; border-radius: 5px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Patcheur de Langue</h1>
+  <div class="subtitle">Tamagotchi Paradise — change la langue de la save + recalcule le CRC-16 automatiquement</div>
+
+  <div id="drop">
+    <div class="icon">🌍</div>
+    <div><strong>Glisse ton firmware .bin ici</strong></div>
+    <div class="hint">ou clique pour choisir un fichier (16 Mo)</div>
+    <input type="file" id="file" accept=".bin">
+  </div>
+
+  <div class="card" id="info" style="display:none">
+    <div class="row">
+      <span class="label">Fichier</span>
+      <span class="value" id="fname">—</span>
+    </div>
+    <div class="row">
+      <span class="label">Taille</span>
+      <span class="value" id="fsize">—</span>
+    </div>
+    <div class="row">
+      <span class="label">Langue actuelle</span>
+      <span class="value"><span class="badge" id="curlang">—</span></span>
+    </div>
+    <div class="row">
+      <span class="label">CRC save (vérification)</span>
+      <span class="value"><span class="badge" id="crcstatus">—</span></span>
+    </div>
+
+    <label class="field">
+      <span class="label">Nouvelle langue</span>
+      <select id="langsel">
+        <option value="4">Anglais (EN) — 0x04</option>
+        <option value="5">Allemand (DE) — 0x05 *</option>
+        <option value="6">Français (FR) — 0x06</option>
+        <option value="7">Espagnol (ES) — 0x07 *</option>
+        <option value="8">Italien (IT) — 0x08 *</option>
+        <option value="0">Index 0 — 0x00 *</option>
+        <option value="1">Index 1 — 0x01 *</option>
+        <option value="2">Index 2 — 0x02 *</option>
+        <option value="3">Index 3 — 0x03 *</option>
+      </select>
+    </label>
+
+    <button id="patch" disabled>Générer le firmware patché</button>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="footer">
+    Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.<br>
+    Save principale <code>0xEFE000</code> · langue <code>+0x7B</code> · CRC-16 Rocksoft sur <code>[+0x04 : +0x1000]</code><br>
+    * langues à confirmer sur matériel
+  </div>
+</div>
+
+<script>
+const SAVE_OFF = 0xEFE000;
+const SAVE_LEN = 0x1000;
+const LANG_OFF = 0x7B;
+const LANG_NAMES = {4:'EN', 5:'DE', 6:'FR', 7:'ES', 8:'IT'};
+
+let buf = null;       // ArrayBuffer du fichier
+let bytes = null;     // Uint8Array
+let fileName = '';
+
+// CRC-16 Rocksoft (poly 0x8005 réfléchi = 0xA001, init 0, refin/refout, xorout 0)
+function crc16(data) {
+  let crc = 0;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let b = 0; b < 8; b++) {
+      crc = (crc & 1) ? ((crc >>> 1) ^ 0xA001) : (crc >>> 1);
+    }
+  }
+  return crc & 0xFFFF;
+}
+
+function u16(arr, off) { return arr[off] | (arr[off+1] << 8); }
+function w16(arr, off, v) { arr[off] = v & 0xFF; arr[off+1] = (v >>> 8) & 0xFF; }
+
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+const info = document.getElementById('info');
+const patchBtn = document.getElementById('patch');
+const log = document.getElementById('log');
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('over');
+  if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) loadFile(e.target.files[0]);
+});
+
+function loadFile(file) {
+  fileName = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    buf = ev.target.result;
+    bytes = new Uint8Array(buf);
+    analyze(file);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function analyze(file) {
+  info.style.display = 'block';
+  document.getElementById('fname').textContent = fileName;
+  document.getElementById('fsize').textContent = (file.size/1024/1024).toFixed(2) + ' Mo';
+
+  // Validation taille
+  if (file.size !== 0x1000000) {
+    document.getElementById('fsize').innerHTML += ' <span class="badge err">≠ 16 Mo</span>';
+    patchBtn.disabled = true;
+    log.textContent = '⚠️ Taille inattendue. Un firmware Paradise fait exactement 16 Mo (16 777 216 octets).';
+    return;
+  }
+
+  const save = bytes.subarray(SAVE_OFF, SAVE_OFF + SAVE_LEN);
+  const lang = save[LANG_OFF];
+  const langName = LANG_NAMES[lang] || ('0x' + lang.toString(16).padStart(2,'0'));
+  document.getElementById('curlang').textContent = langName + ' (0x' + lang.toString(16).padStart(2,'0') + ')';
+  document.getElementById('curlang').className = 'badge ok';
+
+  // Vérif CRC
+  const stored = u16(save, 0);
+  const calc = crc16(save.subarray(4, SAVE_LEN));
+  const crcEl = document.getElementById('crcstatus');
+  if (stored === calc) {
+    crcEl.textContent = '✓ valide (0x' + stored.toString(16).padStart(4,'0') + ')';
+    crcEl.className = 'badge ok';
+  } else {
+    crcEl.textContent = 'stocké 0x' + stored.toString(16).padStart(4,'0') + ' ≠ calculé 0x' + calc.toString(16).padStart(4,'0');
+    crcEl.className = 'badge warn';
+  }
+
+  // Présélectionne une langue différente de l'actuelle
+  document.getElementById('langsel').value = (lang === 4) ? '6' : '4';
+  patchBtn.disabled = false;
+  log.textContent = '';
+}
+
+patchBtn.addEventListener('click', () => {
+  // Copie de travail
+  const out = new Uint8Array(bytes);          // copie complète
+  const newLang = parseInt(document.getElementById('langsel').value, 10);
+  const oldLang = out[SAVE_OFF + LANG_OFF];
+
+  // 1) change la langue
+  out[SAVE_OFF + LANG_OFF] = newLang;
+
+  // 2) recalcule le CRC sur [4:0x1000]
+  const newCrc = crc16(out.subarray(SAVE_OFF + 4, SAVE_OFF + SAVE_LEN));
+  w16(out, SAVE_OFF + 0, newCrc);
+  w16(out, SAVE_OFF + 2, (0xFFFF - newCrc) & 0xFFFF);  // complément
+
+  // 3) vérif
+  const verify = crc16(out.subarray(SAVE_OFF + 4, SAVE_OFF + SAVE_LEN));
+  const ok = verify === u16(out, SAVE_OFF);
+
+  const ln = n => LANG_NAMES[n] || ('0x'+n.toString(16));
+  log.textContent =
+    `Langue : ${ln(oldLang)} (0x${oldLang.toString(16).padStart(2,'0')}) → ${ln(newLang)} (0x${newLang.toString(16).padStart(2,'0')})\n` +
+    `CRC recalculé : 0x${newCrc.toString(16).padStart(4,'0')}  ·  complément : 0x${((0xFFFF-newCrc)&0xFFFF).toString(16).padStart(4,'0')}\n` +
+    `Vérification : ${ok ? '✅ CRC cohérent' : '❌ ERREUR'}\n` +
+    `Backup (0xEFF000) : laissé tel quel.`;
+
+  // 4) téléchargement
+  const base = fileName.replace(/\.bin$/i, '');
+  const outName = `${base}_${ln(newLang)}.bin`;
+  const blob = new Blob([out], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = outName;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  log.textContent += `\n💾 Téléchargé : ${outName}`;
+});
+</script>
+</body>
+</html>
