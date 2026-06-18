@@ -13,16 +13,16 @@ Everything runs in your browser or via Python CLI. No server, no complicated set
 ## Tools
 
 **Unlock Codes Editor** — Change the 8-digit unlock codes that grant items on the console.
-- Browser: `unlock-codes-editor.html` | CLI: `unlock-codes-editor.py` | Docs: [Unlock_codes_editor](Unlock codes editor)
+- Browser: `unlock-codes-editor.html` | CLI: `unlock-codes-editor.py` | Docs: [Unlock_codes_editor](Unlock_codes_editor/)
 
 **Text Editor** — Rename characters and objects across all 6 languages. Handles custom charset and checksums automatically.
-- Browser: `text-editor.html` | CLI: `text-editor.py` | Docs: [Text_editor](Text editor)
+- Browser: `text-editor.html` | CLI: `text-editor.py` | Docs: [Text_editor](Text_editor/)
 
 **Purge Save Backup** — Clear the backup save slot by filling it with 0xFF bytes.
-- CLI: `purge_backup.py` | Docs: [Purge_save_backup](Purge save backup)
+- CLI: `purge_backup.py` | Docs: [Purge_save_backup](Purge_save_backup/)
 
 **Language Patcher** — Change your save's language setting. English and French confirmed; others pending regional dump comparisons.
-- Browser: `language-patcher.html` | Docs: [Language_patcher](Language patcher)
+- Browser: `language-patcher.html` | Docs: [Language_patcher](Language_patcher/)
 
 **Ghosts Editor** — Manage the 16 ghost save slots.
 - Browser: `ghosts-editor.html` | Docs: `DOC_GHOSTS.md` (coming soon)
@@ -67,10 +67,10 @@ In progress:
 
 ## Documentation
 
-- [Unlock_codes_editor](Unlock codes editor) — Unlock codes
-- [Text_editor](Text editor) — Renaming
-- [Purge_save_backup](Purge save backup) — Backup cleanup
-- [Language_patcher](Language patcher) — Language switching
+- [Unlock_codes_editor](Unlock_codes_editor/) — Unlock codes
+- [Text_editor](Text_editor/) — Renaming
+- [Purge_save_backup](Purge_save_backup/) — Backup cleanup
+- [Language_patcher](Language_patcher/) — Language switching
 - `DOC_GHOSTS.md` — Ghost management (coming soon)
 
 For reverse engineering details:
@@ -103,21 +103,19 @@ Tout fonctionne dans ton navigateur ou via CLI Python. Pas de serveur, pas de co
 ## Outils
 
 **Editeur de Codes** — Change les codes de deverrouillage a 8 chiffres qui accordent des objets.
-- Navigateur: `unlock-codes-editor.html` | CLI: `unlock-codes-editor.py` | Docs: [Unlock_codes_editor](Unlock codes editor)
+- Navigateur: `unlock-codes-editor.html` | CLI: `unlock-codes-editor.py` | Docs: [Unlock_codes_editor](Unlock_codes_editor/)
 
 **Editeur de Textes** — Renomme les personnages et les objets a travers les 6 langues. Gere le charset custom et les checksums automatiquement.
-- Navigateur: `text-editor.html` | CLI: `text-editor.py` | Docs: [Text_editor](Text editor)
+- Navigateur: `text-editor.html` | CLI: `text-editor.py` | Docs: [Text_editor](Text_editor/)
 
 **Purger le Backup** — Efface le slot de save de backup en le remplissant avec des octets 0xFF.
-- CLI: `purge_backup.py` | Docs: [Purge_save_backup](Purge save backup)
+- CLI: `purge_backup.py` | Docs: [Purge_save_backup](Purge_save_backup/)
 
 **Patcheur de Langue** — Change la langue de ta save. Anglais et francais confirmes ; les autres en attente de comparaisons de dumps regionaux.
-- Navigateur: `language-patcher.html` | Docs: [Language_patcher](Language patcher)
+- Navigateur: `language-patcher.html` | Docs: [Language_patcher](Language_patcher/)
 
 **Editeur de Ghosts** — Gere les 16 slots de save de fantomes.
 - Navigateur: `ghosts-editor.html` | Docs: `DOC_GHOSTS.md` (a venir)
-
-(Editeur d'Offsets de Sprites a venir)
 
 ## Bien commencer
 
@@ -157,10 +155,10 @@ En cours:
 
 ## Documentation
 
-- [Unlock_codes_editor](Unlock codes editor) — Codes de deverrouillage
-- [Text_editor](Text editor) — Renommage
-- [Purge_save_backup](Purge save backup) — Nettoyage du backup
-- [Language_patcher](Language patcher) — Changement de langue
+- [Unlock_codes_editor](Unlock_codes_editor/) — Codes de deverrouillage
+- [Text_editor](Text_editor/) — Renommage
+- [Purge_save_backup](Purge_save_backup/) — Nettoyage du backup
+- [Language_patcher](Language_patcher/) — Changement de langue
 - `DOC_GHOSTS.md` — Gestion des ghosts (a venir)
 
 Pour les details de reverse engineering:
