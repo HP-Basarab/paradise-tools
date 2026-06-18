@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# This script was cleaned up / documented with AI help for clarity and readability.
 """
 purge_backup.py — Tamagotchi Paradise Firmware
 Remplace 0xEFF000–0xF00000 (4 Ko) par 0xFF et sauvegarde en place.
