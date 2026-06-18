@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# This script was cleaned up / documented with AI help for clarity and readability.
 """
 unlock-codes-editor.py - Changer les codes d'unlock (mots de passe numeriques) d'un Tamagotchi Paradise.
 
