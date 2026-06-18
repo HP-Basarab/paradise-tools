@@ -1,5 +1,10 @@
-# Tamagotchi Paradise Reverse Engineering
+# ⚠️ WARNING
 
+**This repository was created by a complete idiot who barely knows what he's doing with code. I have no idea what I'm talking about half the time, and this whole thing is held together with duct tape and prayers. If something breaks, catches fire, or summons demons, that's on you. You've been warned.**
+
+---
+
+# Tamagotchi Paradise Tools
 Tools and documentation for modifying Tamagotchi Paradise firmware (Sonix SNC7330).
 
 **Note:** The Python scripts and internal comments are currently in French. I'll get around to translating them one day(tm). The documentation is available in both English and French.
@@ -88,7 +93,13 @@ These tools modify your console's firmware. Keep backups of your original dumps 
 
 ---
 
-# Tamagotchi Paradise — Reverse Engineering
+# ⚠️ AVERTISSEMENT
+
+**Ce dépôt a été créé par un complet idiot qui sait à peine ce qu'il fait avec le code. Je n'ai aucune idée de ce que je raconte la moitié du temps, et tout ça tient ensemble avec du ruban adhésif et des prières. Si quelque chose se casse, prend feu, ou invoque des démons, c'est de ta faute. Tu as été prévenu.**
+
+---
+
+# Tamagotchi Paradise — Outils
 
 Outils et documentation pour modifier le firmware de Tamagotchi Paradise (Sonix SNC7330).
 
