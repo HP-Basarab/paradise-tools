@@ -1,5 +1,3 @@
-# 🌍 ENGLISH VERSION
-
 > **📌 Recentering note — summary produced by AI**
 >
 > This document gathers in one place everything discovered, deduced and validated so far about the Tamagotchi Paradise (memory map, checksums, sprites, ghosts, biomes, save, language, tools, and the investigative method). It serves me as a single reference point to continue the reverse-engineering work.
