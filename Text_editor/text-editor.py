@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# This script was cleaned up / documented with AI help for clarity and readability.
 """
 text-editor.py — Renommer les personnages / objets d'un firmware Tamagotchi Paradise.
 
