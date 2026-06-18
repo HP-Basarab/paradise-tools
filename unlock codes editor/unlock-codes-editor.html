@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éditeur de codes — Tamagotchi Paradise</title>
+<style>
+  :root{
+    --pink:#f48fb1; --pink-d:#ec5f93; --teal:#26a69a; --teal-d:#1d877d;
+    --bg:#fdf3f7; --card:#ffffff; --ink:#3a2e34; --muted:#8a7a82;
+    --line:#f0d9e4; --edit:#fff7da; --edit-line:#f3d97a; --ok:#2e9e6b; --err:#d4513e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.45}
+  .wrap{max-width:920px;margin:0 auto;padding:18px 16px 80px}
+  h1{font-size:21px;margin:.2em 0 .1em}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;
+        box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .drop{border:2px dashed var(--pink);border-radius:14px;padding:26px;text-align:center;background:#fff;cursor:pointer;
+        transition:.15s}
+  .drop:hover,.drop.over{background:#fff0f6;border-color:var(--pink-d)}
+  .drop b{color:var(--pink-d)}
+  button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
+  .btn-teal{background:var(--teal);color:#fff}
+  .btn-teal:hover{background:var(--teal-d)}
+  .btn-teal:disabled{background:#bcd;cursor:not-allowed}
+  .btn-ghost{background:#f4e7ee;color:var(--ink)}
+  .btn-ghost:hover{background:#ecd7e2}
+  .row-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1 1 auto}
+  input[type=text]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  input[type=text]:focus{outline:2px solid var(--pink)}
+  .hint{font-size:12px;color:var(--muted)}
+  .list{margin-top:6px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:last-child{border-bottom:0}
+  .item:hover{background:#fdf0f6}
+  .item.changed{background:var(--edit);border-left:4px solid var(--edit-line)}
+  .idx{color:var(--muted);font-size:11px;min-width:46px;font-variant-numeric:tabular-nums}
+  .code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;letter-spacing:1px;flex:1 1 auto}
+  .label{font-size:11px;color:var(--teal-d);background:#e3f4f1;border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .was{font-size:12px;color:var(--muted);text-decoration:line-through;margin-left:8px;font-family:ui-monospace,monospace}
+  .edit-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+  .edit-box input{flex:0 0 auto;width:160px;font-family:ui-monospace,monospace;font-size:16px;letter-spacing:1px}
+  .count{font-size:12px}
+  .stick{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:8px}
+  .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}
+  .msg.err{display:block;background:#fdece8;color:var(--err)}
+  .msg.ok{display:block;background:#e7f6ee;color:var(--ok)}
+  .foot{font-size:12px;color:var(--muted);margin-top:10px}
+  .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
+  code{background:#f6eef2;padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔑 Éditeur de codes — Tamagotchi Paradise</h1>
+  <div class="sub">Ouvre ton dump, clique un code, change-le (8 chiffres), télécharge. Les codes sont en clair : aucun checksum à recalculer. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
+
+  <div class="card" id="loadCard">
+    <div class="drop" id="drop">
+      <div style="font-size:32px">📂</div>
+      <div>Glisse ton fichier <b>.bin</b> ici, ou <b>clique pour choisir</b></div>
+      <div class="hint" style="margin-top:6px">Un dump complet (16 Mo) de ta console. Pense à garder une copie de l'original !</div>
+      <input type="file" id="file" accept=".bin,application/octet-stream" style="display:none">
+    </div>
+    <div class="msg" id="loadMsg"></div>
+  </div>
+
+  <div id="editor" style="display:none">
+    <div class="card stick">
+      <div class="row-top">
+        <div class="grow">
+          <span class="pill" id="fileInfo"></span>
+          <span class="pill" id="tableInfo"></span>
+        </div>
+        <span class="count" id="changeCount">0 modification</span>
+        <button class="btn-ghost" id="resetBtn">Tout annuler</button>
+        <button class="btn-teal" id="dlBtn" disabled>⬇️ Télécharger le .bin</button>
+      </div>
+      <div class="row-top" style="margin-top:10px">
+        <input type="text" id="search" class="grow" placeholder="🔎 Filtrer (un code, un n° d'index, ou un nom connu…)">
+      </div>
+      <div class="msg" id="editMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="list" id="list"></div>
+      <div class="foot" id="listFoot"></div>
+    </div>
+
+    <div class="foot">
+      Chaque code fait exactement <b>8 chiffres</b>. Seuls deux objets sont identifiés pour l'instant
+      (index 70 et 85) ; les autres index n'ont pas encore de nom associé.
+      Une fois le fichier téléchargé, flashe-le avec Asprogrammer.
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ----- mêmes bornes que codes.py -----
+const SCAN_DEBUT = 0x11000;
+const SCAN_FIN   = 0x110000;
+const TAILLE_ENTREE = 9;   // 8 chiffres ASCII + 1 octet nul
+const MIN_ENTREES   = 20;  // en dessous, ce n'est pas la table
+
+// noms connus (briefing) — index -> objet
+const NOMS_CONNUS = {70:'CHAPEAU IRUKATCHI', 85:'COURONNE DE FEUILLES'};
+
+let bytes=null, original=null, fileName="paradise.bin";
+let tableStart=0, tableCount=0;
+
+const $ = id => document.getElementById(id);
+
+// ---------- localisation de la table (logique de codes.py) ----------
+function isEntry(b, o){
+  if(o + TAILLE_ENTREE > b.length) return false;
+  for(let k=0;k<8;k++){ if(b[o+k] < 48 || b[o+k] > 57) return false; } // '0'..'9'
+  return b[o+8] === 0;
+}
+function trouverTable(b){
+  let best={start:0, n:0};
+  let o=SCAN_DEBUT; const fin=Math.min(SCAN_FIN, b.length);
+  while(o < fin){
+    if(isEntry(b,o)){
+      const start=o; let n=0;
+      while(isEntry(b,o)){ o+=TAILLE_ENTREE; n++; }
+      if(n > best.n) best={start, n};
+    } else {
+      o++;
+    }
+  }
+  if(best.n < MIN_ENTREES) throw new Error("Table de codes introuvable. Ce fichier ne ressemble pas à un dump Paradise complet.");
+  return best;
+}
+
+// ---------- lecture / écriture d'un code ----------
+function lireCode(i){
+  const o = tableStart + i*TAILLE_ENTREE;
+  let s='';
+  for(let k=0;k<8;k++) s += String.fromCharCode(bytes[o+k]);
+  return s;
+}
+function codeOrigine(i){
+  const o = tableStart + i*TAILLE_ENTREE;
+  let s='';
+  for(let k=0;k<8;k++) s += String.fromCharCode(original[o+k]);
+  return s;
+}
+function ecrireCode(i, nouveau){
+  if(!(nouveau.length===8 && /^[0-9]{8}$/.test(nouveau)))
+    throw new Error('Code invalide : il faut exactement 8 chiffres (0-9).');
+  const o = tableStart + i*TAILLE_ENTREE;
+  for(let k=0;k<8;k++) bytes[o+k] = nouveau.charCodeAt(k);
+}
+function estModifie(i){ return lireCode(i) !== codeOrigine(i); }
+
+// ---------- UI ----------
+function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+kind; if(!txt) el.className='msg'; }
+function refreshCounts(){
+  let n=0; for(let i=0;i<tableCount;i++) if(estModifie(i)) n++;
+  $('changeCount').textContent = n+' modification'+(n>1?'s':'');
+  $('dlBtn').disabled = n===0;
+}
+function render(){
+  const q=$('search').value.trim().toUpperCase();
+  const list=$('list'); list.innerHTML='';
+  let shown=0;
+  for(let i=0;i<tableCount;i++){
+    const now=lireCode(i);
+    const label=NOMS_CONNUS[i]||'';
+    if(q){
+      const hay=(now+' '+i+' '+label).toUpperCase();
+      if(!hay.includes(q)) continue;
+    }
+    shown++;
+    const row=document.createElement('div');
+    row.className='item'+(estModifie(i)?' changed':'');
+    row.innerHTML =
+      '<span class="idx">#'+i+'</span>'+
+      '<span class="code">'+now+(estModifie(i)?'<span class="was">'+codeOrigine(i)+'</span>':'')+'</span>'+
+      (label?'<span class="label">'+escapeHtml(label)+'</span>':'');
+    row.onclick=()=>openEditor(row,i);
+    list.appendChild(row);
+  }
+  $('listFoot').textContent = shown+' / '+tableCount+' codes affichés';
+  refreshCounts();
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function openEditor(row,i){
+  const now=lireCode(i);
+  const label=NOMS_CONNUS[i]||'';
+  row.onclick=null; row.style.cursor='default';
+  row.innerHTML='';
+  const box=document.createElement('div'); box.className='edit-box';
+  const idx=document.createElement('span'); idx.className='idx'; idx.textContent='#'+i;
+  const inp=document.createElement('input'); inp.type='text'; inp.value=now; inp.maxLength=8;
+  inp.spellcheck=false; inp.inputMode='numeric';
+  const save=document.createElement('button'); save.className='btn-teal'; save.textContent='OK';
+  const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Annuler';
+  const cnt=document.createElement('span'); cnt.className='hint';
+  const upd=()=>{ cnt.textContent=inp.value.length+' / 8'; };
+  inp.oninput=()=>{ inp.value=inp.value.replace(/[^0-9]/g,''); upd(); };
+  upd();
+  box.append(idx,inp,save,cancel,cnt);
+  if(label){ const lb=document.createElement('span'); lb.className='label'; lb.textContent=label; box.append(lb); }
+  row.appendChild(box);
+  inp.focus(); inp.select();
+  const commit=()=>{
+    try{ ecrireCode(i, inp.value); showMsg($('editMsg'),'',''); render(); }
+    catch(e){ showMsg($('editMsg'),e.message,'err'); inp.focus(); }
+  };
+  save.onclick=commit;
+  inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
+  cancel.onclick=()=>{ showMsg($('editMsg'),'',''); render(); };
+}
+
+// ---------- chargement du fichier ----------
+async function handleFile(f){
+  try{
+    fileName=f.name||"paradise.bin";
+    const buf=await f.arrayBuffer();
+    bytes=new Uint8Array(buf);
+    original=bytes.slice();
+    const t=trouverTable(bytes);   // valide le format
+    tableStart=t.start; tableCount=t.n;
+    $('fileInfo').textContent='📦 '+fileName+' ('+(bytes.length/1048576).toFixed(1)+' Mo)';
+    $('tableInfo').textContent=tableCount+' codes @0x'+tableStart.toString(16).toUpperCase();
+    $('loadMsg').className='msg';
+    $('editor').style.display='block';
+    $('loadCard').style.display='none';
+    showMsg($('editMsg'),'',''); render();
+  }catch(e){
+    showMsg($('loadMsg'), (e&&e.message)||'Fichier illisible.', 'err');
+  }
+}
+
+// ---------- téléchargement (aucun checksum) ----------
+function download(){
+  const base=fileName.replace(/\.bin$/i,'');
+  const blob=new Blob([bytes],{type:'application/octet-stream'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=base+'-CODES.bin';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+  showMsg($('editMsg'),'✅ Fichier généré. Flashe-le avec Asprogrammer.','ok');
+}
+
+// ---------- branchements ----------
+const drop=$('drop'), fileInput=$('file');
+drop.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); };
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+$('search').oninput=render;
+$('dlBtn').onclick=download;
+$('resetBtn').onclick=()=>{ if(!original)return; bytes.set(original); showMsg($('editMsg'),'',''); render(); };
+</script>
+</body>
+</html>
