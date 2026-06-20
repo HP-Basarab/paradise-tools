@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tamagotchi Paradise Biome Patcher</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons@latest/tabler-icons.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h1 i {
+            font-size: 28px;
+            color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        label i {
+            margin-right: 6px;
+            font-size: 16px;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+        
+        .file-help {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+        
+        .file-info {
+            display: none;
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+        
+        .file-info.show {
+            display: block;
+        }
+        
+        .file-info p {
+            margin: 4px 0;
+        }
+        
+        .file-info-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .file-info-size {
+            color: #999;
+        }
+        
+        .error {
+            display: none;
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            font-size: 13px;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .biome-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .biome-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .biome-btn:hover {
+            border-color: #667eea;
+        }
+        
+        .biome-btn.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+            color: #667eea;
+        }
+        
+        .biome-btn-main {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        
+        .biome-btn-sub {
+            font-size: 12px;
+            color: #999;
+            font-weight: 400;
+        }
+        
+        .biome-btn.active .biome-btn-sub {
+            color: #667eea;
+        }
+        
+        .checkbox-group {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+        
+        .checkbox-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        .checkbox-label i {
+            margin-right: 6px;
+            font-size: 16px;
+        }
+        
+        .checkbox-help {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+            margin-left: 28px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        button i {
+            font-size: 18px;
+        }
+        
+        .success {
+            display: none;
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3a3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 1.5rem;
+            font-size: 13px;
+        }
+        
+        .success.show {
+            display: block;
+        }
+        
+        .success-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <i class="ti ti-device-gamepad"></i>
+            Tamagotchi Patcher
+        </h1>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="form-group">
+            <label for="fileInput">
+                <i class="ti ti-upload"></i>
+                Charger un firmware (.bin)
+            </label>
+            <input type="file" id="fileInput" accept=".bin">
+            <div class="file-help">Taille attendue : 16 Mo</div>
+            <div class="file-info" id="fileInfo">
+                <p><strong>Fichier chargé:</strong></p>
+                <p class="file-info-name" id="fileName"></p>
+                <p class="file-info-size" id="fileSize"></p>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <i class="ti ti-home"></i>
+                Biome de départ
+            </label>
+            <div class="biome-grid">
+                <button type="button" class="biome-btn active" data-biome="1">
+                    <span class="biome-btn-main">1 - Terre</span>
+                    <span class="biome-btn-sub">Land</span>
+                </button>
+                <button type="button" class="biome-btn" data-biome="2">
+                    <span class="biome-btn-main">2 - Eau</span>
+                    <span class="biome-btn-sub">Water</span>
+                </button>
+                <button type="button" class="biome-btn" data-biome="3">
+                    <span class="biome-btn-main">3 - Ciel</span>
+                    <span class="biome-btn-sub">Sky</span>
+                </button>
+                <button type="button" class="biome-btn" data-biome="4">
+                    <span class="biome-btn-main">4 - Jade</span>
+                    <span class="biome-btn-sub">Jade Forest</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="checkbox-group">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="clearSave" checked>
+                <label for="clearSave" class="checkbox-label">
+                    <i class="ti ti-trash"></i>
+                    Effacer la sauvegarde
+                </label>
+            </div>
+            <div class="checkbox-help">Force une nouvelle partie au biome sélectionné</div>
+        </div>
+        
+        <button type="button" id="patchBtn" disabled>
+            <i class="ti ti-download"></i>
+            Télécharger le firmware
+        </button>
+        
+        <div class="success" id="success">
+            <div class="success-title">
+                <i class="ti ti-check"></i>
+                Firmware patché avec succès !
+            </div>
+            <div>Prêt à flasher dans AsProgrammer</div>
+        </div>
+    </div>
+    
+    <script>
+        const MAGIC = 0xFFFFFC03;
+        const VERSION_OFFSET = 0xD49000;
+        const SUM_END = 0xD49FF8;
+        const V_OFFSET = 0xD49FF8;
+        const F4_OFFSET = 0xD49FF4;
+        const F6_OFFSET = 0xD49FF6;
+        const SAVE_START = 0xefe000;
+        const SAVE_END = 0xf00000;
+        
+        const FIELDS = {
+            1: { f4: 0x0001, f6: 0x0004, name: 'Land' },
+            2: { f4: 0x0001, f6: 0x0004, name: 'Water' },
+            3: { f4: 0x0001, f6: 0x0004, name: 'Sky' },
+            4: { f4: 0x0002, f6: 0x0000, name: 'Jade' }
+        };
+        
+        let fileData = null;
+        let selectedBiome = 1;
+        
+        const fileInput = document.getElementById('fileInput');
+        const error = document.getElementById('error');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const patchBtn = document.getElementById('patchBtn');
+        const success = document.getElementById('success');
+        const clearSave = document.getElementById('clearSave');
+        
+        document.querySelectorAll('.biome-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.biome-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedBiome = parseInt(btn.dataset.biome);
+                updatePatchBtn();
+            });
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                fileData = null;
+                fileInfo.classList.remove('show');
+                updatePatchBtn();
+                return;
+            }
+            
+            if (file.size !== 0x1000000) {
+                error.textContent = `Fichier invalide : ${(file.size / 1024 / 1024).toFixed(1)} Mo au lieu de 16 Mo`;
+                error.classList.add('show');
+                fileInfo.classList.remove('show');
+                fileData = null;
+                updatePatchBtn();
+                return;
+            }
+            
+            error.classList.remove('show');
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                fileData = new Uint8Array(evt.target.result);
+                fileName.textContent = file.name;
+                fileSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} Mo`;
+                fileInfo.classList.add('show');
+                updatePatchBtn();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        function updatePatchBtn() {
+            if (fileData) {
+                patchBtn.disabled = false;
+            } else {
+                patchBtn.disabled = true;
+            }
+        }
+        
+        patchBtn.addEventListener('click', () => {
+            const patched = new Uint8Array(fileData);
+            
+            patched[VERSION_OFFSET] = selectedBiome;
+            
+            const f4 = FIELDS[selectedBiome].f4;
+            const f6 = FIELDS[selectedBiome].f6;
+            new DataView(patched.buffer).setUint16(F4_OFFSET, f4, true);
+            new DataView(patched.buffer).setUint16(F6_OFFSET, f6, true);
+            
+            let sum = 0;
+            for (let i = 0; i < SUM_END; i++) {
+                sum = (sum + patched[i]) >>> 0;
+            }
+            const V = (MAGIC - sum) >>> 0;
+            new DataView(patched.buffer).setUint32(V_OFFSET, V, true);
+            new DataView(patched.buffer).setUint32(V_OFFSET + 4, (~V) >>> 0, true);
+            
+            if (clearSave.checked) {
+                for (let i = SAVE_START; i < SAVE_END; i++) {
+                    patched[i] = 0xFF;
+                }
+            }
+            
+            const blob = new Blob([patched], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tamagotchi_biome_${selectedBiome}_${FIELDS[selectedBiome].name}.bin`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            success.classList.add('show');
+            setTimeout(() => success.classList.remove('show'), 3000);
+        });
+    </script>
+</body>
+</html>
