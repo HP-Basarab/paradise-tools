@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éditeur de ghosts v2 — Tamagotchi Paradise</title>
+<style>
+ :root{--pink:#f48fb1;--pink-d:#ec5f93;--teal:#26a69a;--teal-d:#1d877d;--bg:#fdf3f7;--card:#fff;--ink:#3a2e34;--muted:#8a7a82;--line:#f0d9e4;--edit:#fff7da;--edit-line:#f3d97a;--ok:#2e9e6b;--err:#d4513e;}
+ *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+ .wrap{max-width:880px;margin:0 auto;padding:18px 16px 80px} h1{font-size:21px;margin:.2em 0 .1em} .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+ .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+ .note{background:#fff0f6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:#7a5b69;margin-bottom:14px}
+ .drop{border:2px dashed var(--pink);border-radius:14px;padding:26px;text-align:center;background:#fff;cursor:pointer}.drop:hover,.drop.over{background:#fff0f6;border-color:var(--pink-d)} .drop b{color:var(--pink-d)}
+ button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer} .btn-teal{background:var(--teal);color:#fff}.btn-teal:disabled{background:#bcd;cursor:not-allowed} .btn-ghost{background:#f4e7ee;color:var(--ink)}
+ .row-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1 1 auto}
+ select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;max-width:62%}
+ .ghost{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--line)}.ghost:last-child{border-bottom:0}.ghost.changed{background:var(--edit);border-left:4px solid var(--edit-line)}
+ .ginfo{flex:1 1 auto;min-width:0}.gname{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:600}
+ .gmeta{font-size:11.5px;color:var(--muted)} .was{color:var(--muted);text-decoration:line-through;margin-left:8px;font-weight:400}
+ .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
+ .count{font-size:12px}.stick{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:8px}
+ .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}.msg.err{display:block;background:#fdece8;color:var(--err)}.msg.ok{display:block;background:#e7f6ee;color:var(--ok)}
+ .foot{font-size:12px;color:var(--muted);margin-top:10px}
+</style></head>
+<body><div class="wrap">
+ <h1>👻 Éditeur de ghosts v2 — Tamagotchi Paradise</h1>
+ <div class="sub">Compatible Sky ET Jade Forest. Trouve les ghosts automatiquement, affiche leur vraie identité, recalcule le checksum.</div>
+ <div class="note"><b>À savoir :</b> change l'<b>identité</b> (nom + id). Sur <b>Jade</b>, la structure des ghosts diffère ; le changement de <b>nom</b> est fiable, mais le <b>sprite</b> doit être confirmé en flashant un test sur un seul ghost. On ne peut pas déplacer un ghost vers un autre biome (c'est dans la save).</div>
+ <div class="card" id="loadCard"><div class="drop" id="drop"><div style="font-size:32px">📂</div>
+   <div>Glisse ton <b>.bin</b> ici, ou <b>clique pour choisir</b></div>
+   <div class="foot" style="margin-top:6px">Pars d'un dump récent de ta console, garde l'original.</div>
+   <input type="file" id="file" accept=".bin,application/octet-stream" style="display:none"></div><div class="msg" id="loadMsg"></div></div>
+ <div id="editor" style="display:none">
+  <div class="card stick"><div class="row-top"><div class="grow"><span class="pill" id="fileInfo"></span><span class="pill" id="ghostInfo"></span></div>
+   <span class="count" id="changeCount">0 modification</span><button class="btn-ghost" id="resetBtn">Tout annuler</button><button class="btn-teal" id="dlBtn" disabled>⬇️ Télécharger le .bin</button></div><div class="msg" id="editMsg"></div></div>
+  <div class="card"><div id="list"></div></div></div>
+</div>
+<script>
+"use strict";
+const CHARS = {"1001": "BABYMARUTCHI", "2002": "LAND KID", "2003": "WATER KID", "2004": "SKY KID", "2069": "FOREST KID", "3005": "ROAR YOUNG", "3006": "TODDLE YOUNG", "3007": "LICK YOUNG", "3008": "SPROUT YOUNG", "3009": "GLIDE YOUNG", "3010": "LEAP YOUNG", "3011": "PADDLE YOUNG", "3012": "FLOAT YOUNG", "3013": "FLAP YOUNG", "3014": "CHIRP  YOUNG", "3015": "BUMBLE YOUNG", "3016": "ROCKY YOUNG", "3070": "FOREST ROAR YOUNG", "3071": "FOREST TODDLE YOUNG", "3072": "FOREST CHIRP YOUNG", "3073": "FOREST SPROUT YOUNG", "4017": "BBMARUTCHI", "4018": "MEOWTCHI", "4019": "POCHITCHI", "4020": "GUMAX", "4021": "RATCHI", "4022": "MAMETCHI", "4023": "MIMITCHI", "4024": "MOLMOTCHI", "4025": "SHEEPTCHI", "4026": "SEBIRETCHI", "4027": "LEOPATCHI", "4028": "ELIZARDOTCHI", "4029": "HEAVYTCHI", "4030": "FURAWATCHI", "4031": "TUSTUSTCHI", "4032": "POTSUNENTCHI", "4033": "SHIGEMI-SAN", "4034": "IRUKATCHI", "4035": "KAMETCHI", "4036": "BEAVERTCHI", "4037": "KUJIRATCHI", "4038": "AXOLOPATCHI", "4039": "IMORITCHI", "4040": "KAWAZUTCHI", "4041": "URUOTCHI", "4042": "TACHUTCHI", "4043": "SHARKTCHI", "4044": "ANKOTCHI", "4045": "OTOTOTCHI", "4046": "KURARATCHI", "4047": "MENDAKOTCHI", "4048": "AMEFURATCHI", "4049": "GUSOKUTCHI", "4050": "HORHOTCHI", "4051": "MONGATCHI", "4052": "EAGLETCHI", "4053": "BATCHI", "4054": "PAPILLOTCHI", "4055": "KABUTOTCHI", "4056": "TENTOTCHI", "4057": "HATCHITCHI", "4058": "KUCHIPATCHI", "4059": "BATATCHI", "4060": "PEACOTCHI", "4061": "KIWITCHI", "4062": "GEMTCHI", "4063": "ORETATCHI", "4064": "ISHIKOROTCHI", "4065": "MAGMATCHI", "4066": "CHODRACOTCHI", "4067": "MERMARINTCHI", "4068": "YAYACORNTCHI", "4074": "FOREST HORHOTCHI", "4075": "KONKOTCHI", "4076": "TIGAOTCHI", "4077": "TANOONTCHI", "4078": "LESSAPANTCHI", "4079": "KANOKOTCHI", "4080": "SUIGYUTCHI", "4081": "PANBOOTCHI", "4082": "KACHITCHI", "4083": "TOKIPATCHI", "4084": "KUCHIPATCHI (Forest)", "4085": "SPARROTCHI", "4086": "SHIITAKETCHI", "4087": "PEATCHI", "4088": "NAPPATCHI", "4089": "RUSHRADITCHI", "4090": "TATSUTCHI", "4800": "OMARUTCHI", "4801": "POOPTCHI", "4802": "MEERTCHI", "4803": "SHYONTCHI"};
+const OPTIONS = `<option value="">— (ne pas changer) —</option> <optgroup label="Adultes"> <option value="4048">AMEFURATCHI</option> <option value="4044">ANKOTCHI</option> <option value="4038">AXOLOPATCHI</option> <option value="4059">BATATCHI</option> <option value="4053">BATCHI</option> <option value="4017">BBMARUTCHI</option> <option value="4036">BEAVERTCHI</option> <option value="4066">CHODRACOTCHI</option> <option value="4052">EAGLETCHI</option> <option value="4028">ELIZARDOTCHI</option> <option value="4030">FURAWATCHI</option> <option value="4062">GEMTCHI</option> <option value="4020">GUMAX</option> <option value="4049">GUSOKUTCHI</option> <option value="4057">HATCHITCHI</option> <option value="4029">HEAVYTCHI</option> <option value="4050">HORHOTCHI</option> <option value="4039">IMORITCHI</option> <option value="4034">IRUKATCHI</option> <option value="4064">ISHIKOROTCHI</option> <option value="4055">KABUTOTCHI</option> <option value="4035">KAMETCHI</option> <option value="4040">KAWAZUTCHI</option> <option value="4061">KIWITCHI</option> <option value="4058">KUCHIPATCHI</option> <option value="4037">KUJIRATCHI</option> <option value="4046">KURARATCHI</option> <option value="4027">LEOPATCHI</option> <option value="4065">MAGMATCHI</option> <option value="4022">MAMETCHI</option> <option value="4047">MENDAKOTCHI</option> <option value="4018">MEOWTCHI</option> <option value="4067">MERMARINTCHI</option> <option value="4023">MIMITCHI</option> <option value="4024">MOLMOTCHI</option> <option value="4051">MONGATCHI</option> <option value="4063">ORETATCHI</option> <option value="4045">OTOTOTCHI</option> <option value="4054">PAPILLOTCHI</option> <option value="4060">PEACOTCHI</option> <option value="4019">POCHITCHI</option> <option value="4032">POTSUNENTCHI</option> <option value="4021">RATCHI</option> <option value="4026">SEBIRETCHI</option> <option value="4043">SHARKTCHI</option> <option value="4025">SHEEPTCHI</option> <option value="4033">SHIGEMI-SAN</option> <option value="4042">TACHUTCHI</option> <option value="4056">TENTOTCHI</option> <option value="4031">TUSTUSTCHI</option> <option value="4041">URUOTCHI</option> <option value="4068">YAYACORNTCHI</option> </optgroup> <optgroup label="Jeunes (young)"> <option value="3015">BUMBLE YOUNG</option> <option value="3014">CHIRP  YOUNG</option> <option value="3013">FLAP YOUNG</option> <option value="3012">FLOAT YOUNG</option> <option value="3072">FOREST CHIRP YOUNG</option> <option value="3070">FOREST ROAR YOUNG</option> <option value="3073">FOREST SPROUT YOUNG</option> <option value="3071">FOREST TODDLE YOUNG</option> <option value="3009">GLIDE YOUNG</option> <option value="3010">LEAP YOUNG</option> <option value="3007">LICK YOUNG</option> <option value="3011">PADDLE YOUNG</option> <option value="3005">ROAR YOUNG</option> <option value="3016">ROCKY YOUNG</option> <option value="3008">SPROUT YOUNG</option> <option value="3006">TODDLE YOUNG</option> </optgroup> <optgroup label="Enfants"> <option value="2069">FOREST KID</option> <option value="2002">LAND KID</option> <option value="2004">SKY KID</option> <option value="2003">WATER KID</option> </optgroup> <optgroup label="Bébé"> <option value="1001">BABYMARUTCHI</option> </optgroup> <optgroup label="Forest"> <option value="4074">FOREST HORHOTCHI</option> <option value="4082">KACHITCHI</option> <option value="4079">KANOKOTCHI</option> <option value="4075">KONKOTCHI</option> <option value="4084">KUCHIPATCHI (Forest)</option> <option value="4078">LESSAPANTCHI</option> <option value="4088">NAPPATCHI</option> <option value="4081">PANBOOTCHI</option> <option value="4087">PEATCHI</option> <option value="4089">RUSHRADITCHI</option> <option value="4086">SHIITAKETCHI</option> <option value="4085">SPARROTCHI</option> <option value="4080">SUIGYUTCHI</option> <option value="4077">TANOONTCHI</option> <option value="4090">TATSUTCHI</option> <option value="4076">TIGAOTCHI</option> <option value="4083">TOKIPATCHI</option> </optgroup> <optgroup label="Autres"> <option value="4802">MEERTCHI</option> <option value="4800">OMARUTCHI</option> <option value="4801">POOPTCHI</option> <option value="4803">SHYONTCHI</option> </optgroup>`;
+const NOM1=0x2C, NOM2=0x46, NOM_MAX=12;
+const ID_OFFSETS=[0x0C,0x0E,0x10A];        // champs pouvant contenir l'id (Sky:+0x0C, Jade:+0x10A)
+const SCAN_START=0xC00000;                  // les ghosts sont bien au-dessus
+let bytes=null, original=null, dv=null, fileName="paradise.bin", ghosts=[];
+const $=id=>document.getElementById(id);
+const u16=o=>dv.getUint16(o,true), u32=o=>dv.getUint32(o,true);
+
+const NAME2ID={}; for(const k in CHARS) NAME2ID[CHARS[k].trim().toUpperCase()]=parseInt(k,10);
+const ACC={0x197:'É',0x196:'Ç',0x199:'Ê',0x1AA:'Ñ',0x178:"'"};
+function decChar(ci){ if(ACC[ci]!==undefined)return ACC[ci];
+  if(ci===0x131)return ' '; if(ci>=0x132&&ci<=0x13B)return String.fromCharCode(48+(ci-0x132));
+  if(ci>=0x00FD&&ci<=0x017A){const a=ci-0x00FD; if(a>=0x20&&a<=0x7E)return String.fromCharCode(a);} return null; }
+function encChar(c){ if(c===' ')return 0x131; if(c>='0'&&c<='9')return 0x132+(c.charCodeAt(0)-48);
+  const o=c.charCodeAt(0); if(o>=0x20&&o<=0x7E)return 0x00FD+o; return null; }
+function readName(base,field){ let s=''; for(let k=0;k<14;k++){ const ci=u16(base+field+k*2); const c=decChar(ci); if(ci===0||c===null)break; s+=c;} return s; }
+function writeName(base,field,name){ let p=base+field; for(const ch of name.slice(0,NOM_MAX)){const code=encChar(ch); if(code===null)continue; dv.setUint16(p,code,true); p+=2;} for(;p<base+field+(NOM_MAX+1)*2;p++) bytes[p]=0; }
+function recalc(base){ const tlen=u32(base+0x10C), end=base+((tlen+3)&~3); let s=0; for(let o=base+8;o<end;o+=4)s=(s+u32(o))>>>0; dv.setUint32(base,s>>>0,true); dv.setUint32(base+4,(-s)>>>0,true); }
+
+// --- Recherche DYNAMIQUE par signature : w0+w4==0, w0!=0, tlen sain, checksum vérifié ---
+function scanGhosts(){
+  const res=[]; const end=Math.min(dv.byteLength-0x120, 0x1000000);
+  for(let base=SCAN_START; base<end; base+=4){
+    const w0=u32(base); if(w0===0) continue;
+    if(((w0+u32(base+4))>>>0)!==0) continue;
+    const tlen=u32(base+0x10C); if(tlen<0x1000||tlen>0x8000) continue;
+    const stop=base+((tlen+3)&~3); if(stop>dv.byteLength) continue;
+    let s=0; for(let o=base+8;o<stop;o+=4) s=(s+u32(o))>>>0;
+    if(s===w0) res.push({base});
+  }
+  return res;
+}
+function setGhost(base, targetId){
+  const oldName=readName(base,NOM1).trim().toUpperCase();
+  const oldId=NAME2ID[oldName];
+  const newName=(CHARS[targetId]||"").trim();
+  writeName(base,NOM1,newName); writeName(base,NOM2,newName);
+  if(oldId!==undefined){            // remplacer l'ancien id là où il est (Sky:+0x0C, Jade:+0x10A)
+    let touched=false;
+    for(const o of ID_OFFSETS){ if(u16(base+o)===oldId){ dv.setUint16(base+o,targetId,true); touched=true; } }
+    if(!touched) dv.setUint16(base+0x0C,targetId,true);   // filet de sécurité
+  } else { dv.setUint16(base+0x0C,targetId,true); dv.setUint16(base+0x0E,targetId,true); }
+  recalc(base);
+}
+function escapeHtml(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function render(){
+  const list=$('list'); list.innerHTML=''; let changed=0;
+  ghosts.forEach((g,k)=>{
+    const name=readName(g.base,NOM1);
+    const origName=(function(){let s='';for(let j=0;j<14;j++){const ci=original[g.base+NOM1+j*2]|(original[g.base+NOM1+j*2+1]<<8);const c=decChar(ci);if(ci===0||c===null)break;s+=c;}return s;})();
+    const isCh=name!==origName; if(isCh) changed++;
+    const row=document.createElement('div'); row.className='ghost'+(isCh?' changed':'');
+    row.innerHTML='<div class="ginfo"><div class="gname">'+escapeHtml(name)+
+      (isCh?'<span class="was">'+escapeHtml(origName)+'</span>':'')+'</div>'+
+      '<div class="gmeta">slot '+Math.round((g.base-0xDEE000)/0x2000)+' · @0x'+g.base.toString(16).toUpperCase()+'</div></div>'+
+      '<select>'+OPTIONS+'</select>';
+    list.appendChild(row);
+    const sel=row.querySelector('select');
+    const curId=NAME2ID[name.trim().toUpperCase()]; if(curId!==undefined) sel.value=String(curId);
+    sel.onchange=()=>{ const t=parseInt(sel.value,10); if(t){ setGhost(g.base,t); render(); } };
+  });
+  $('changeCount').textContent=changed+' modification'+(changed>1?'s':'');
+  $('dlBtn').disabled=changed===0;
+}
+async function handleFile(f){
+  try{ fileName=f.name||"paradise.bin";
+    const buf=await f.arrayBuffer(); bytes=new Uint8Array(buf); original=bytes.slice(); dv=new DataView(bytes.buffer);
+    ghosts=scanGhosts();
+    if(!ghosts.length) throw new Error("Aucun ghost trouvé (dump Paradise complet ?).");
+    $('fileInfo').textContent='📦 '+fileName+' ('+(bytes.length/1048576).toFixed(1)+' Mo)';
+    $('ghostInfo').textContent=ghosts.length+' ghosts';
+    $('editor').style.display='block'; $('loadCard').style.display='none'; render();
+  }catch(e){ const m=$('loadMsg'); m.textContent=e.message||'Fichier illisible.'; m.className='msg err'; }
+}
+function download(){ const out=bytes.slice(); const b=fileName.replace(/\.bin$/i,'');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([out],{type:'application/octet-stream'}));
+  a.download=b+'-GHOSTS.bin'; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+  const m=$('editMsg'); m.textContent='✅ Fichier généré (checksums recalculés). Flashe-le avec Asprogrammer.'; m.className='msg ok'; }
+const drop=$('drop'),file=$('file');
+drop.onclick=()=>file.click(); file.onchange=e=>{if(e.target.files[0])handleFile(e.target.files[0]);};
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+$('dlBtn').onclick=download;
+$('resetBtn').onclick=()=>{ if(original){bytes.set(original); const m=$('editMsg');m.className='msg';m.textContent=''; render();} };
+</script></body></html>
