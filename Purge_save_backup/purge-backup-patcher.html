@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purge du backup de save — Tamagotchi Paradise</title>
+<style>
+  :root{
+    --pink:#f48fb1; --pink-d:#ec5f93; --teal:#26a69a; --teal-d:#1d877d;
+    --bg:#fdf3f7; --card:#ffffff; --ink:#3a2e34; --muted:#8a7a82;
+    --line:#f0d9e4; --ok:#2e9e6b; --err:#d4513e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.45}
+  .wrap{max-width:640px;margin:0 auto;padding:18px 16px 80px}
+  h1{font-size:21px;margin:.2em 0 .1em}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;
+        box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .drop{border:2px dashed var(--pink);border-radius:14px;padding:26px;text-align:center;background:#fff;cursor:pointer;
+        transition:.15s}
+  .drop:hover,.drop.over{background:#fff0f6;border-color:var(--pink-d)}
+  .drop b{color:var(--pink-d)}
+  button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
+  .btn-primary{width:100%;margin-top:6px;padding:14px;border-radius:12px;font-size:1rem;font-weight:600;
+        background:linear-gradient(135deg,var(--teal),var(--teal-d));color:#fff}
+  .btn-primary:hover:not(:disabled){transform:translateY(-1px)}
+  .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+  .hint{font-size:12px;color:var(--muted)}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;gap:10px}
+  .row+.row{border-top:1px solid var(--line)}
+  .label{color:var(--muted);font-size:.85rem}
+  .value{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem;word-break:break-all;text-align:right}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+  .badge.ok{background:#e7f6ee;color:var(--ok)}
+  .badge.err{background:#fdece8;color:var(--err)}
+  .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
+  .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}
+  .msg.err{display:block;background:#fdece8;color:var(--err)}
+  .msg.ok{display:block;background:#e7f6ee;color:var(--ok)}
+  .foot{font-size:12px;color:var(--muted);margin-top:10px}
+  code{background:#f6eef2;padding:1px 5px;border-radius:5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧹 Purge du backup de save — Tamagotchi Paradise</h1>
+  <div class="sub">Remplace la zone de backup <code>0xEFF000–0xF00000</code> (4 Ko) par <code>0xFF</code>. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
+
+  <div class="card" id="loadCard">
+    <div class="drop" id="drop">
+      <div style="font-size:32px">📂</div>
+      <div>Glisse ton fichier <b>.bin</b> ici, ou <b>clique pour choisir</b></div>
+      <div class="hint" style="margin-top:6px">Un dump complet (16 Mo) de ta console. Pense à garder une copie de l'original !</div>
+      <input type="file" id="file" accept=".bin,application/octet-stream" style="display:none">
+    </div>
+    <div class="msg" id="loadMsg"></div>
+  </div>
+
+  <div class="card" id="editor" style="display:none">
+    <div class="row">
+      <span class="label">Fichier</span>
+      <span class="value" id="fname">—</span>
+    </div>
+    <div class="row">
+      <span class="label">Taille</span>
+      <span class="value" id="fsize">—</span>
+    </div>
+    <div class="row">
+      <span class="label">Backup AVANT</span>
+      <span class="value" id="before">—</span>
+    </div>
+    <div class="row">
+      <span class="label">Backup APRÈS</span>
+      <span class="value" id="after">—</span>
+    </div>
+    <div class="row">
+      <span class="label">État</span>
+      <span class="value"><span class="badge" id="state">—</span></span>
+    </div>
+
+    <button class="btn-primary" id="dlBtn" disabled>⬇️ Purger &amp; télécharger le .bin</button>
+    <div class="msg" id="editMsg"></div>
+    <div class="foot">
+      Backup ciblé : <code>0xEFF000 → 0xF00000</code> rempli de <code>0xFF</code>. La save principale (<code>0xEFE000</code>) n'est pas touchée.
+      Une fois téléchargé, flashe-le avec Asprogrammer.
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const BACKUP_START = 0xEFF000;
+const BACKUP_END   = 0xF00000;
+const SIZE_16MB    = 0x1000000;
+
+let bytes=null, fileName="paradise.bin", fileSizeOk=false;
+
+const $ = id => document.getElementById(id);
+
+function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+(kind||''); if(!txt) el.className='msg'; }
+function hex16(arr,off){
+  let s=''; for(let k=0;k<16;k++) s+=arr[off+k].toString(16).padStart(2,'0');
+  return s+'…';
+}
+
+async function handleFile(f){
+  try{
+    fileName=f.name||"paradise.bin";
+    const buf=await f.arrayBuffer();
+    bytes=new Uint8Array(buf);
+
+    $('editor').style.display='block';
+    $('loadCard').style.display='none';
+    $('fname').textContent=fileName;
+    $('fsize').textContent=(bytes.length/1048576).toFixed(2)+' Mo';
+
+    fileSizeOk = (bytes.length === SIZE_16MB);
+    if(!fileSizeOk){
+      $('before').textContent='—'; $('after').textContent='—';
+      $('state').textContent='≠ 16 Mo'; $('state').className='badge err';
+      $('dlBtn').disabled=true;
+      showMsg($('editMsg'),'⚠️ Taille inattendue : un firmware Paradise fait exactement 16 Mo (16 777 216 octets).','err');
+      return;
+    }
+
+    const before = hex16(bytes, BACKUP_START);
+    $('before').textContent = before;
+    $('after').textContent  = 'ffffffffffffffffffffffffffffffff…';
+    const alreadyPurged = bytes.subarray(BACKUP_START, BACKUP_START+16).every(b=>b===0xFF);
+    $('state').textContent = alreadyPurged ? 'déjà purgé' : 'prêt à purger';
+    $('state').className = 'badge ok';
+    $('dlBtn').disabled=false;
+    showMsg($('editMsg'),'','');
+  }catch(e){
+    showMsg($('loadMsg'), (e&&e.message)||'Fichier illisible.', 'err');
+  }
+}
+
+function download(){
+  if(!fileSizeOk) return;
+  const out=bytes.slice();
+  out.fill(0xFF, BACKUP_START, BACKUP_END);
+  const base=fileName.replace(/\.bin$/i,'');
+  const blob=new Blob([out],{type:'application/octet-stream'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=base+'-BACKUP-PURGE.bin';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+  showMsg($('editMsg'),'✅ Backup purgé (0xEFF000–0xF00000 → 0xFF). Flashe-le avec Asprogrammer.','ok');
+}
+
+const drop=$('drop'), fileInput=$('file');
+drop.onclick=()=>fileInput.click();
+fileInput.onchange=e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); };
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+$('dlBtn').onclick=download;
+</script>
+</body>
+</html>
