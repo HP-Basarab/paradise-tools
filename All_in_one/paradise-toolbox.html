@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boîte à outils — Tamagotchi Paradise</title>
+<style>
+  :root{
+    --pink:#f48fb1; --pink-d:#ec5f93; --teal:#26a69a; --teal-d:#1d877d;
+    --bg:#fdf3f7; --card:#ffffff; --ink:#3a2e34; --muted:#8a7a82;
+    --line:#f0d9e4; --edit:#fff7da; --edit-line:#f3d97a; --ok:#2e9e6b; --err:#d4513e; --warn:#c98a18;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.45}
+  .wrap{max-width:920px;margin:0 auto;padding:18px 16px 80px}
+  h1{font-size:22px;margin:.2em 0 .1em}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;
+        box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  .drop{border:2px dashed var(--pink);border-radius:14px;padding:22px;text-align:center;background:#fff;cursor:pointer;transition:.15s}
+  .drop:hover,.drop.over{background:#fff0f6;border-color:var(--pink-d)}
+  .drop b{color:var(--pink-d)}
+
+  button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
+  .btn-teal{background:var(--teal);color:#fff}
+  .btn-teal:hover{background:var(--teal-d)}
+  .btn-teal:disabled{background:#cdd6d4;cursor:not-allowed}
+  .btn-ghost{background:#f4e7ee;color:var(--ink)}
+  .btn-ghost:hover{background:#ecd7e2}
+  .btn-go{background:linear-gradient(135deg,var(--teal),var(--teal-d));color:#fff;font-weight:600}
+  .btn-go:hover:not(:disabled){transform:translateY(-1px)}
+  .btn-go:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  .row-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1 1 auto}
+  input[type=text],select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  input[type=text]:focus,select:focus{outline:2px solid var(--pink)}
+  input[type=checkbox]{width:18px;height:18px;cursor:pointer;accent-color:var(--teal)}
+  .hint{font-size:12px;color:var(--muted)}
+
+  .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600}
+  .badge.ok{background:#e7f6ee;color:var(--ok)}
+  .badge.warn{background:#fdf2dc;color:var(--warn)}
+  .badge.err{background:#fdece8;color:var(--err)}
+
+  .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}
+  .msg.err{display:block;background:#fdece8;color:var(--err)}
+  .msg.ok{display:block;background:#e7f6ee;color:var(--ok)}
+  .foot{font-size:12px;color:var(--muted);margin-top:10px}
+  code{background:#f6eef2;padding:1px 5px;border-radius:5px;font-size:12px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 14px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer;transition:.12s;position:relative}
+  .tab:hover{border-color:var(--pink)}
+  .tab.active{background:linear-gradient(135deg,var(--pink),var(--pink-d));color:#fff;border-color:transparent}
+  .tab .dot{display:none;background:var(--teal);color:#fff;border-radius:999px;font-size:10px;padding:0 6px;margin-left:6px;vertical-align:middle}
+  .tab.has-mods .dot{display:inline-block}
+  .tab.active.has-mods .dot{background:#fff;color:var(--pink-d)}
+  .panel{display:none}
+  .panel.active{display:block}
+
+  /* action bar */
+  .actionbar{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .count{font-size:13px;font-weight:600}
+
+  /* detail rows */
+  .drow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;gap:10px}
+  .drow+.drow{border-top:1px solid var(--line)}
+  .dlabel{color:var(--muted);font-size:.85rem}
+  .dvalue{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.85rem;word-break:break-all;text-align:right}
+
+  /* biome grid */
+  .biome-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 14px}
+  .biome-btn{padding:12px;border:2px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;text-align:left;transition:.15s}
+  .biome-btn:hover{border-color:var(--pink)}
+  .biome-btn.active{border-color:var(--teal);background:#e9f6f4}
+  .biome-btn-main{display:block;font-weight:600;margin-bottom:2px}
+  .biome-btn-sub{font-size:12px;color:var(--muted)}
+  .biome-btn.active .biome-btn-sub{color:var(--teal-d)}
+  .checkbox-group{background:#fbf2f7;border:1px solid var(--line);padding:12px;border-radius:10px;margin-bottom:8px}
+  .checkbox-wrapper{display:flex;align-items:center;gap:10px}
+  .checkbox-help{font-size:12px;color:var(--muted);margin-top:6px;margin-left:28px}
+
+  /* lists */
+  .list{margin-top:6px;border:1px solid var(--line);border-radius:12px;overflow:hidden;max-height:55vh;overflow-y:auto}
+  .item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:last-child{border-bottom:0}
+  .item:hover{background:#fdf0f6}
+  .item.changed{background:var(--edit);border-left:4px solid var(--edit-line)}
+  .idx{color:var(--muted);font-size:11px;min-width:46px;font-variant-numeric:tabular-nums}
+  .name{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14.5px;white-space:pre;flex:1 1 auto}
+  .codeval{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:16px;letter-spacing:1px;flex:1 1 auto}
+  .tag{font-size:11px;color:var(--teal-d);background:#e3f4f1;border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .was{font-size:11px;color:var(--muted);text-decoration:line-through;margin-left:6px}
+  .edit-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+  .edit-box input{flex:1 1 220px}
+  .accents{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+  .accents button{padding:6px 9px;background:#f4e7ee}
+  .accents button:hover{background:#ecd7e2}
+  .unavail{padding:14px;color:var(--muted);font-size:13px;background:#faf4f7;border:1px dashed var(--line);border-radius:10px}
+
+  /* éditeur multi-langues */
+  .item.editing{cursor:default;background:#fffdf3;border-left:4px solid var(--edit-line)}
+  .mlpanel{width:100%}
+  .mlhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .mltitle{font-size:12px;color:var(--muted)}
+  .mlrow{display:flex;gap:8px;align-items:center;margin:5px 0}
+  .mlrow.dirty .mllabel{color:var(--teal-d);font-weight:700}
+  .mllabel{flex:0 0 92px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .mlrow input{flex:1 1 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .mlrow .cnt{flex:0 0 54px;font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .mlactions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐣 Boîte à outils — Tamagotchi Paradise</h1>
+  <div class="sub">Charge ton firmware, accumule tes modifications dans les onglets — elles sont conservées — puis clique <b>Tout patcher</b> pour générer un seul .bin avec tous les checksums recalculés dans le bon ordre. Tout se passe dans ton navigateur.</div>
+
+  <div class="card" id="loadCard">
+    <div class="drop" id="drop">
+      <div style="font-size:32px">📂</div>
+      <div>Glisse ton fichier <b>.bin</b> ici, ou <b>clique pour choisir</b></div>
+      <div class="hint" style="margin-top:6px">Un dump complet (16 Mo) de ta console. Garde toujours une copie de l'original !</div>
+      <input type="file" id="file" accept=".bin,application/octet-stream" style="display:none">
+    </div>
+    <div class="msg" id="loadMsg"></div>
+    <div id="loadedInfo" style="display:none;margin-top:10px">
+      <span class="pill" id="fileInfo"></span>
+      <button class="btn-ghost" id="changeFileBtn" style="font-size:12px;padding:5px 10px">Changer de fichier</button>
+    </div>
+  </div>
+
+  <div id="tabsSection" style="display:none">
+    <div class="tabs">
+      <button class="tab active" data-tab="biome">🏝️ Biome <span class="dot" id="dot-biome"></span></button>
+      <button class="tab" data-tab="lang">🌍 Langue <span class="dot" id="dot-lang"></span></button>
+      <button class="tab" data-tab="names">✏️ Noms <span class="dot" id="dot-names"></span></button>
+      <button class="tab" data-tab="codes">🔑 Codes <span class="dot" id="dot-codes"></span></button>
+      <button class="tab" data-tab="purge">🧹 Purge <span class="dot" id="dot-purge"></span></button>
+      <button class="tab" data-tab="recap">📋 Récap <span class="dot" id="dot-recap"></span></button>
+    </div>
+
+    <div class="card actionbar">
+      <span class="count" id="globalCount">0 modification</span>
+      <div class="grow"></div>
+      <button class="btn-ghost" id="resetAll">↺ Tout réinitialiser</button>
+      <button class="btn-go" id="patchAll" disabled>⬇️ Tout patcher &amp; télécharger</button>
+    </div>
+    <div class="msg" id="globalMsg" style="margin-top:-6px;margin-bottom:14px"></div>
+
+    <!-- BIOME -->
+    <div class="panel active" id="panel-biome">
+      <div class="card">
+        <div class="sub" style="margin-bottom:10px">Choisis le biome de départ (clique à nouveau pour annuler).</div>
+        <div id="biome-body">
+          <div class="biome-grid" id="biome-grid">
+            <button type="button" class="biome-btn" data-biome="1"><span class="biome-btn-main">1 — Terre</span><span class="biome-btn-sub">Land</span></button>
+            <button type="button" class="biome-btn" data-biome="2"><span class="biome-btn-main">2 — Eau</span><span class="biome-btn-sub">Water</span></button>
+            <button type="button" class="biome-btn" data-biome="3"><span class="biome-btn-main">3 — Ciel</span><span class="biome-btn-sub">Sky</span></button>
+            <button type="button" class="biome-btn" data-biome="4"><span class="biome-btn-main">4 — Jade</span><span class="biome-btn-sub">Jade Forest</span></button>
+          </div>
+          <div class="checkbox-group">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="biome-clear">
+              <label for="biome-clear" style="font-weight:500;cursor:pointer">🗑️ Effacer la sauvegarde</label>
+            </div>
+            <div class="checkbox-help">Force une nouvelle partie (0xEFE000–0xF00000 → 0xFF). Écrase la save, donc la langue ci-dessous sera ignorée.</div>
+          </div>
+          <div class="foot">Écrit le biome à <code>0xD49000</code> + champs <code>+0xFF4/+0xFF6</code>. Le checksum firmware (<code>0xD49FF8</code>) est recalculé au patch — uniquement si tu modifies le biome, comme l'outil d'origine.</div>
+        </div>
+        <div class="unavail" id="biome-unavail" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- LANGUE -->
+    <div class="panel" id="panel-lang">
+      <div class="card">
+        <div class="sub" style="margin-bottom:10px">Change la langue de la save (CRC-16 recalculé au patch).</div>
+        <div id="lang-body">
+          <div class="drow"><span class="dlabel">Langue actuelle</span><span class="dvalue"><span class="badge" id="lang-cur">—</span></span></div>
+          <div class="drow"><span class="dlabel">CRC save (vérification)</span><span class="dvalue"><span class="badge" id="lang-crc">—</span></span></div>
+          <label style="display:block;margin-top:14px">
+            <span class="hint" style="display:block;margin-bottom:6px">Nouvelle langue</span>
+            <select id="lang-sel" class="grow" style="width:100%">
+              <option value="">— ne pas modifier —</option>
+              <option value="4">Anglais (EN) — 0x04</option>
+              <option value="5">Allemand (DE) — 0x05 *</option>
+              <option value="6">Français (FR) — 0x06</option>
+              <option value="7">Espagnol (ES) — 0x07 *</option>
+              <option value="8">Italien (IT) — 0x08 *</option>
+              <option value="0">Index 0 — 0x00 *</option>
+              <option value="1">Index 1 — 0x01 *</option>
+              <option value="2">Index 2 — 0x02 *</option>
+              <option value="3">Index 3 — 0x03 *</option>
+            </select>
+          </label>
+          <div class="foot">Save <code>0xEFE000</code> · langue <code>+0x7B</code> · CRC-16 Rocksoft sur <code>[+0x04 : +0x1000]</code> · * langues à confirmer sur matériel</div>
+        </div>
+        <div class="unavail" id="lang-unavail" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- NOMS -->
+    <div class="panel" id="panel-names">
+      <div class="card">
+        <div id="names-body">
+          <div class="row-top">
+            <div class="grow"><span class="pill" id="names-arch"></span></div>
+            <label class="hint">Langue&nbsp;:
+              <select id="names-lang">
+                <option value="2" selected>Français (ta console)</option>
+                <option value="1">Anglais</option>
+                <option value="3">Allemand</option>
+                <option value="4">Portugais</option>
+                <option value="5">Espagnol</option>
+                <option value="6">Italien</option>
+              </select>
+            </label>
+          </div>
+          <div class="row-top" style="margin-top:10px">
+            <input type="text" id="names-search" class="grow" placeholder="🔎 Filtrer (ex. CHAPEAU, MAMETCHI, ROCKY…)">
+          </div>
+          <div class="msg" id="names-msg"></div>
+          <div class="list" id="names-list"></div>
+          <div class="foot" id="names-listfoot"></div>
+          <div class="foot">Badge « max N » = nombre de caractères maximum. Caractères gérés : A–Z, chiffres, espace, <code>É Ç Ê Ñ</code> + apostrophe. Checksums archive recalculés au patch.</div>
+        </div>
+        <div class="unavail" id="names-unavail" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- CODES -->
+    <div class="panel" id="panel-codes">
+      <div class="card">
+        <div id="codes-body">
+          <div class="row-top">
+            <div class="grow"><span class="pill" id="codes-table"></span></div>
+          </div>
+          <div class="row-top" style="margin-top:10px">
+            <input type="text" id="codes-search" class="grow" placeholder="🔎 Filtrer (un code, un n° d'index, ou un nom connu…)">
+          </div>
+          <div class="msg" id="codes-msg"></div>
+          <div class="list" id="codes-list"></div>
+          <div class="foot" id="codes-listfoot"></div>
+          <div class="foot">Chaque code fait exactement <b>8 chiffres</b>. Codes en clair, aucun checksum.</div>
+        </div>
+        <div class="unavail" id="codes-unavail" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- PURGE -->
+    <div class="panel" id="panel-purge">
+      <div class="card">
+        <div class="sub" style="margin-bottom:10px">Remplace la zone de backup <code>0xEFF000–0xF00000</code> (4 Ko) par <code>0xFF</code>.</div>
+        <div id="purge-body">
+          <div class="checkbox-group">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="purge-chk">
+              <label for="purge-chk" style="font-weight:500;cursor:pointer">🧹 Purger le backup de save</label>
+            </div>
+            <div class="checkbox-help">La save principale (<code>0xEFE000</code>) n'est pas touchée.</div>
+          </div>
+          <div class="drow"><span class="dlabel">Backup actuel</span><span class="dvalue" id="purge-before">—</span></div>
+          <div class="drow"><span class="dlabel">État</span><span class="dvalue"><span class="badge" id="purge-state">—</span></span></div>
+        </div>
+        <div class="unavail" id="purge-unavail" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- RECAP -->
+    <div class="panel" id="panel-recap">
+      <div class="card">
+        <div class="sub" style="margin-bottom:6px">Toutes les modifications en cours. Le bouton applique tout d'un coup et recalcule les checksums.</div>
+        <div id="recap-list"></div>
+        <button class="btn-go" id="recap-patch" disabled style="width:100%;margin-top:14px;padding:13px">⬇️ Tout patcher &amp; télécharger</button>
+        <div class="foot">Ordre appliqué : noms/codes → checksums archive → biome → save (effacer <i>ou</i> langue+CRC) → purge backup → checksum firmware.</div>
+      </div>
+    </div>
+
+    <div class="foot" style="text-align:center">Flashe le .bin final avec Asprogrammer.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const SIZE_16MB = 0x1000000;
+const $ = id => document.getElementById(id);
+function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+(kind||''); if(!txt) el.className='msg'; }
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function downloadBytes(arr, name){
+  const blob=new Blob([arr],{type:'application/octet-stream'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+}
+
+/* ---- offsets partagés ---- */
+const B_VERSION=0xD49000, B_SUMEND=0xD49FF8, B_V=0xD49FF8, B_F4=0xD49FF4, B_F6=0xD49FF6, B_MAGIC=0xFFFFFC03;
+const B_FIELDS={1:{f4:0x0001,f6:0x0004,name:'Land'},2:{f4:0x0001,f6:0x0004,name:'Water'},
+                3:{f4:0x0001,f6:0x0004,name:'Sky'},4:{f4:0x0002,f6:0x0000,name:'Jade'}};
+const SAVE_OFF=0xEFE000, SAVE_LEN=0x1000, LANG_OFF=0x7B;
+const BK_START=0xEFF000, BK_END=0xF00000, CLR_START=0xEFE000, CLR_END=0xF00000;
+const LANG_NAMES={4:'Anglais (EN)',5:'Allemand (DE)',6:'Français (FR)',7:'Espagnol (ES)',8:'Italien (IT)',0:'Index 0',1:'Index 1',2:'Index 2',3:'Index 3'};
+function langLabel(n){ return (LANG_NAMES[n]||('0x'+n.toString(16)))+' (0x'+n.toString(16).padStart(2,'0')+')'; }
+
+/* ---- état partagé ---- */
+const App = {
+  original:null,   // Uint8Array pristine
+  work:null,       // Uint8Array : édits bruts noms+codes (persistants)
+  fileName:"paradise.bin",
+  intent:{ biome:null, lang:null, purgeBackup:false, clearSave:false }
+};
+const is16 = () => App.original && App.original.length===SIZE_16MB;
+
+/* =========================================================================
+   BIOME
+   ========================================================================= */
+const Biome = (function(){
+  function writeFields(out, n){
+    out[B_VERSION]=n;
+    const dv=new DataView(out.buffer);
+    dv.setUint16(B_F4,B_FIELDS[n].f4,true);
+    dv.setUint16(B_F6,B_FIELDS[n].f6,true);
+  }
+  function fixChecksum(out){
+    const dv=new DataView(out.buffer);
+    let sum=0; for(let i=0;i<B_SUMEND;i++) sum=(sum+out[i])>>>0;
+    const V=(B_MAGIC-sum)>>>0;
+    dv.setUint32(B_V,V,true);
+    dv.setUint32(B_V+4,(~V)>>>0,true);
+  }
+  function onLoad(){
+    if(!is16()){
+      $('biome-body').style.display='none';
+      $('biome-unavail').style.display='block';
+      $('biome-unavail').textContent='⚠️ Taille ≠ 16 Mo : cet outil nécessite un firmware complet de 16 Mo.';
+      App.intent.biome=null; App.intent.clearSave=false;
+      return;
+    }
+    $('biome-body').style.display='block'; $('biome-unavail').style.display='none';
+    onShow();
+  }
+  function onShow(){
+    $('biome-grid').querySelectorAll('.biome-btn').forEach(b=>
+      b.classList.toggle('active', parseInt(b.dataset.biome,10)===App.intent.biome));
+    $('biome-clear').checked = App.intent.clearSave;
+  }
+  $('biome-grid').querySelectorAll('.biome-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const n=parseInt(btn.dataset.biome,10);
+      App.intent.biome = (App.intent.biome===n) ? null : n;
+      onShow(); updateSummary();
+    });
+  });
+  $('biome-clear').addEventListener('change',e=>{ App.intent.clearSave=e.target.checked; updateSummary(); });
+  return { onLoad, onShow, writeFields, fixChecksum };
+})();
+
+/* =========================================================================
+   LANGUE
+   ========================================================================= */
+const Lang = (function(){
+  function crc16(data){ let c=0; for(let i=0;i<data.length;i++){ c^=data[i]; for(let b=0;b<8;b++) c=(c&1)?((c>>>1)^0xA001):(c>>>1);} return c&0xFFFF; }
+  const u16=(a,o)=>a[o]|(a[o+1]<<8);
+  const w16=(a,o,v)=>{a[o]=v&0xFF;a[o+1]=(v>>>8)&0xFF;};
+  function writeLang(out,n){ out[SAVE_OFF+LANG_OFF]=n; }
+  function fixCRC(out){
+    const crc=crc16(out.subarray(SAVE_OFF+4,SAVE_OFF+SAVE_LEN));
+    w16(out,SAVE_OFF+0,crc);
+    w16(out,SAVE_OFF+2,(0xFFFF-crc)&0xFFFF);
+  }
+  function onLoad(){
+    if(!is16()){
+      $('lang-body').style.display='none';
+      $('lang-unavail').style.display='block';
+      $('lang-unavail').textContent='⚠️ Taille ≠ 16 Mo : cet outil nécessite un firmware complet de 16 Mo.';
+      App.intent.lang=null; return;
+    }
+    $('lang-body').style.display='block'; $('lang-unavail').style.display='none';
+    const save=App.original.subarray(SAVE_OFF,SAVE_OFF+SAVE_LEN);
+    const lang=save[LANG_OFF];
+    $('lang-cur').textContent=langLabel(lang); $('lang-cur').className='badge ok';
+    const stored=u16(save,0), calc=crc16(save.subarray(4,SAVE_LEN));
+    if(stored===calc){ $('lang-crc').textContent='✓ valide (0x'+stored.toString(16).padStart(4,'0')+')'; $('lang-crc').className='badge ok'; }
+    else{ $('lang-crc').textContent='stocké 0x'+stored.toString(16).padStart(4,'0')+' ≠ calculé 0x'+calc.toString(16).padStart(4,'0'); $('lang-crc').className='badge warn'; }
+    onShow();
+  }
+  function onShow(){ $('lang-sel').value = (App.intent.lang==null) ? '' : String(App.intent.lang); }
+  $('lang-sel').addEventListener('change',e=>{
+    App.intent.lang = e.target.value==='' ? null : parseInt(e.target.value,10);
+    updateSummary();
+  });
+  return { onLoad, onShow, writeLang, fixCRC };
+})();
+
+/* =========================================================================
+   NOMS
+   ========================================================================= */
+const Names = (function(){
+  const MAIN=0x111000, ARC2=0x32435241;
+  const DEC={0x197:'É',0x196:'Ç',0x199:'Ê',0x1AA:'Ñ',0x178:"'"};
+  const ENC={'É':0x197,'Ç':0x196,'Ê':0x199,'Ñ':0x1AA,"'":0x178};
+  const LN={1:'Anglais',2:'Français',3:'Allemand',4:'Portugais',5:'Espagnol',6:'Italien'};
+  const LANG_ORDER=[2,1,3,4,5,6];
+  let dv=null, curTable=2, archive=false;
+  let slotsByLang={}, aligned=false, entryCount=0;
+  const bytes = ()=>App.work, orig = ()=>App.original;
+
+  function decChar(ci){
+    if(ci===0) return null;
+    if(DEC[ci]!==undefined) return DEC[ci];
+    if(ci===0x0131) return ' ';
+    if(ci>=0x0132&&ci<=0x013B) return String.fromCharCode(48+(ci-0x0132));
+    if(ci>=0x00FD&&ci<=0x017A){ const a=ci-0x00FD; if(a>=0x20&&a<=0x7E) return String.fromCharCode(a); }
+    if(ci===0xF000) return '⏎';
+    return '·';
+  }
+  function encChar(c){
+    if(ENC[c]!==undefined) return ENC[c];
+    if(c===' ') return 0x0131;
+    if(c>='0'&&c<='9') return 0x0132+(c.charCodeAt(0)-48);
+    const o=c.charCodeAt(0);
+    if(o>=0x20&&o<=0x7E) return 0x00FD+o;
+    return null;
+  }
+  const u32=o=>dv.getUint32(o,true);
+  function locateStrings(){
+    if(u32(MAIN)!==ARC2) throw new Error("Archive introuvable à 0x111000 (firmware Paradise ?).");
+    const nf=u32(MAIN+12);
+    for(let k=0;k<nf;k++){
+      const sub=MAIN+u32(MAIN+16+k*16+4);
+      if(sub>0&&sub<dv.byteLength-16&&u32(sub)===ARC2&&u32(sub+12)===9) return sub;
+    }
+    throw new Error("Archive de textes (9 langues) introuvable.");
+  }
+  // tous les slots non vides d'une table, dans l'ordre -> alignement par position
+  function rawSlots(tableIdx){
+    const STR=locateStrings();
+    const off=u32(STR+16+tableIdx*16+4);
+    const ln=u32(STR+16+tableIdx*16+12);
+    const base=STR+off;
+    const res=[]; let i=0,st=null;
+    while(i<ln-1){
+      const ci=dv.getUint16(base+i,true);
+      if(ci===0){ if(st!==null){ res.push({addr:st,span:(base+i-st)+2}); } st=null; }
+      else { if(st===null) st=base+i; }
+      i+=2;
+    }
+    return res;
+  }
+  function buildLangIndex(){
+    slotsByLang={};
+    for(const t of LANG_ORDER) slotsByLang[t]=rawSlots(t);
+    const counts=LANG_ORDER.map(t=>slotsByLang[t].length);
+    entryCount=counts[0];
+    aligned=counts.every(c=>c===entryCount && c>0);
+  }
+  function textAt(addr,span){ let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=dv.getUint16(p,true); if(ci===0)break; s+=(decChar(ci)??'·');} return s; }
+  function origTextAt(addr,span){ const o=orig(); let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=o[p]|(o[p+1]<<8); if(ci===0)break; s+=(decChar(ci)??'·');} return s; }
+  function isChanged(addr,span){ const b=bytes(),o=orig(); for(let p=addr;p<addr+span;p++) if(b[p]!==o[p]) return true; return false; }
+  const looksTexty = t => /[A-Za-z0-9ÉÇÊÑ]/.test(t);
+  function encodeName(newText,span){
+    const codes=[];
+    for(const ch of newText){ const c=encChar(ch); if(c===null) throw new Error('Caractère non géré : "'+ch+'". (A–Z, chiffres, espace, É Ç Ê Ñ, apostrophe.)'); codes.push(c); }
+    if(codes.length*2+2>span) throw new Error('Trop long : '+codes.length+' caractères (maximum '+(span/2-1)+').');
+    return codes;
+  }
+  function writeName(addr,span,codes){ let p=addr; const b=bytes(); for(const c of codes){ dv.setUint16(p,c,true); p+=2; } for(;p<addr+span;p++) b[p]=0; }
+  function fixArchiveChecksums(out){
+    const d=new DataView(out.buffer); const u=o=>d.getUint32(o,true);
+    if(u(MAIN)!==ARC2) return;
+    const nfM=u(MAIN+12);
+    const locS=()=>{ for(let k=0;k<nfM;k++){const sub=MAIN+u(MAIN+16+k*16+4); if(u(sub)===ARC2&&u(sub+12)===9)return sub;} };
+    const cend=base=>{const nf=u(base+12);let e=0;for(let k=0;k<nf;k++){const x=base+16+k*16;e=Math.max(e,u(x+4)+u(x+12));}return e;};
+    const STR=locS();
+    let s=0,se=cend(STR); for(let o=STR+8;o<STR+se;o++) s=(s+out[o])>>>0; d.setUint32(STR+4,s>>>0,true);
+    let m=0,me=cend(MAIN); for(let o=MAIN+8;o<MAIN+me;o++) m=(m+out[o])>>>0; d.setUint32(MAIN+4,m>>>0,true);
+  }
+  function render(){
+    if(!archive) return;
+    const q=$('names-search').value.trim().toUpperCase();
+    const list=$('names-list'); list.innerHTML=''; let shown=0;
+    const ref=slotsByLang[curTable]||[];
+    ref.forEach((s,ord)=>{
+      const now=textAt(s.addr,s.span);
+      if(!looksTexty(now)) return;
+      if(q&&!now.toUpperCase().includes(q)) return;
+      shown++;
+      const maxc=s.span/2-1;
+      const ch = aligned
+        ? LANG_ORDER.some(t=>isChanged(slotsByLang[t][ord].addr, slotsByLang[t][ord].span))
+        : isChanged(s.addr,s.span);
+      const row=document.createElement('div');
+      row.className='item'+(ch?' changed':'');
+      row.innerHTML='<span class="idx">#'+ord+'</span>'+
+        '<span class="name">'+escapeHtml(now)+(isChanged(s.addr,s.span)?'<span class="was">'+escapeHtml(origTextAt(s.addr,s.span))+'</span>':'')+'</span>'+
+        '<span class="tag">max '+maxc+'</span>';
+      row.onclick=()=>openEditor(row,ord);
+      list.appendChild(row);
+    });
+    $('names-listfoot').textContent=shown+' / '+ref.length+' textes affichés'+(aligned?' · multi-langues':' · ⚠️ langues non alignées : mono-langue');
+  }
+  function openEditor(row,ord){
+    row.onclick=null; row.className='item editing'; row.innerHTML='';
+    const panel=document.createElement('div'); panel.className='mlpanel';
+    const head=document.createElement('div'); head.className='mlhead';
+    const title=document.createElement('span'); title.className='mltitle';
+    title.textContent = aligned ? ('Entrée #'+ord+' — toutes les langues') : ('Entrée #'+ord+' — '+(LN[curTable]||('table '+curTable)));
+    head.appendChild(title); panel.appendChild(head);
+
+    const tables = aligned ? LANG_ORDER : [curTable];
+    let lastFocused=null; const fields=[];
+    tables.forEach(t=>{
+      const slot=slotsByLang[t][ord]; const maxc=slot.span/2-1; const cur=textAt(slot.addr,slot.span);
+      const r=document.createElement('div'); r.className='mlrow';
+      const lab=document.createElement('span'); lab.className='mllabel'; lab.textContent=LN[t]||('table '+t);
+      const inp=document.createElement('input'); inp.type='text'; inp.value=cur; inp.maxLength=maxc; inp.spellcheck=false;
+      const cnt=document.createElement('span'); cnt.className='cnt';
+      const upd=()=>{ cnt.textContent=inp.value.length+' / '+maxc; r.classList.toggle('dirty', inp.value.toUpperCase()!==cur.toUpperCase()); };
+      inp.oninput=upd; inp.onfocus=()=>lastFocused=inp; upd();
+      inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
+      r.append(lab,inp,cnt); panel.appendChild(r);
+      fields.push({slot,inp,cur});
+    });
+    const acc=document.createElement('div'); acc.className='accents';
+    ['É','Ê','Ç','Ñ',"'"].forEach(a=>{ if(!(a in ENC)) return;
+      const b=document.createElement('button'); b.type='button'; b.textContent=a; b.title='Insérer '+a;
+      b.onclick=()=>{ const inp=lastFocused||fields[0].inp; const p=inp.selectionStart??inp.value.length;
+        inp.value=inp.value.slice(0,p)+a+inp.value.slice(inp.selectionEnd??p); inp.focus(); inp.dispatchEvent(new Event('input')); };
+      acc.appendChild(b);
+    });
+    panel.appendChild(acc);
+    const actions=document.createElement('div'); actions.className='mlactions';
+    const save=document.createElement('button'); save.className='btn-teal'; save.textContent='OK';
+    const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Annuler';
+    actions.append(save,cancel); panel.appendChild(actions);
+    row.appendChild(panel);
+    fields[0].inp.focus(); fields[0].inp.select(); lastFocused=fields[0].inp;
+
+    function commit(){
+      const ops=[];
+      try{
+        for(const f of fields){
+          const nv=f.inp.value.toUpperCase();
+          if(nv===f.cur.toUpperCase()) continue;
+          ops.push({slot:f.slot, codes:encodeName(nv,f.slot.span)});
+        }
+      }catch(e){ showMsg($('names-msg'),e.message,'err'); return; }
+      for(const op of ops) writeName(op.slot.addr, op.slot.span, op.codes);
+      showMsg($('names-msg'), ops.length? ('✅ '+ops.length+' langue'+(ops.length>1?'s':'')+' mise'+(ops.length>1?'s':'')+' à jour.') : '', ops.length?'ok':'');
+      render(); updateSummary();
+    }
+    save.onclick=commit;
+    cancel.onclick=()=>{ showMsg($('names-msg'),'',''); render(); };
+  }
+  function loadTable(){
+    if(!archive) return;
+    curTable=parseInt($('names-lang').value,10);
+    showMsg($('names-msg'),''); render();
+  }
+  function onLoad(){
+    dv=new DataView(App.work.buffer);
+    try{
+      const STR=locateStrings(); archive=true; buildLangIndex();
+      $('names-body').style.display='block'; $('names-unavail').style.display='none';
+      $('names-arch').textContent='archive textes @0x'+STR.toString(16).toUpperCase()+' · '+entryCount+' entrées'+(aligned?'':' (non alignées)');
+      curTable=parseInt($('names-lang').value,10); render();
+    }catch(e){
+      archive=false; slotsByLang={};
+      $('names-body').style.display='none';
+      $('names-unavail').style.display='block';
+      $('names-unavail').textContent='ℹ️ '+e.message+' — éditeur de noms indisponible pour ce fichier.';
+    }
+  }
+  function onShow(){ if(archive) render(); }
+  function countChanged(){ let n=0; for(const t of LANG_ORDER) for(const s of slotsByLang[t]||[]) if(isChanged(s.addr,s.span)) n++; return n; }
+  function hasArchive(){ return archive; }
+  function reset(){ if(archive) render(); }
+  $('names-lang').onchange=loadTable;
+  $('names-search').oninput=render;
+  return { onLoad, onShow, fixArchiveChecksums, countChanged, hasArchive, reset };
+})();
+
+/* =========================================================================
+   CODES
+   ========================================================================= */
+const Codes = (function(){
+  const SCAN_DEBUT=0x11000, SCAN_FIN=0x110000, TAILLE_ENTREE=9, MIN_ENTREES=20;
+  const NOMS_CONNUS={70:'CHAPEAU IRUKATCHI',85:'COURONNE DE FEUILLES'};
+  let tableStart=0, tableCount=0, present=false;
+  const changed=new Set();
+  const bytes=()=>App.work, orig=()=>App.original;
+
+  function isEntry(b,o){ if(o+TAILLE_ENTREE>b.length) return false; for(let k=0;k<8;k++){ if(b[o+k]<48||b[o+k]>57) return false; } return b[o+8]===0; }
+  function trouverTable(b){
+    let best={start:0,n:0}; let o=SCAN_DEBUT; const fin=Math.min(SCAN_FIN,b.length);
+    while(o<fin){ if(isEntry(b,o)){ const start=o; let n=0; while(isEntry(b,o)){ o+=TAILLE_ENTREE; n++; } if(n>best.n) best={start,n}; } else o++; }
+    if(best.n<MIN_ENTREES) throw new Error("Table de codes introuvable (dump Paradise complet ?).");
+    return best;
+  }
+  function lireCode(i){ const o=tableStart+i*TAILLE_ENTREE, b=bytes(); let s=''; for(let k=0;k<8;k++) s+=String.fromCharCode(b[o+k]); return s; }
+  function codeOrigine(i){ const o=tableStart+i*TAILLE_ENTREE, b=orig(); let s=''; for(let k=0;k<8;k++) s+=String.fromCharCode(b[o+k]); return s; }
+  function ecrireCode(i,nv){ if(!(nv.length===8&&/^[0-9]{8}$/.test(nv))) throw new Error('Code invalide : exactement 8 chiffres (0-9).'); const o=tableStart+i*TAILLE_ENTREE, b=bytes(); for(let k=0;k<8;k++) b[o+k]=nv.charCodeAt(k); }
+  function estModifie(i){ return lireCode(i)!==codeOrigine(i); }
+
+  function render(){
+    if(!present) return;
+    const q=$('codes-search').value.trim().toUpperCase();
+    const list=$('codes-list'); list.innerHTML=''; let shown=0;
+    for(let i=0;i<tableCount;i++){
+      const now=lireCode(i); const label=NOMS_CONNUS[i]||'';
+      if(q){ const hay=(now+' '+i+' '+label).toUpperCase(); if(!hay.includes(q)) continue; }
+      shown++;
+      const mod=estModifie(i);
+      const row=document.createElement('div');
+      row.className='item'+(mod?' changed':'');
+      row.innerHTML='<span class="idx">#'+i+'</span>'+
+        '<span class="codeval">'+now+(mod?'<span class="was">'+codeOrigine(i)+'</span>':'')+'</span>'+
+        (label?'<span class="tag">'+escapeHtml(label)+'</span>':'');
+      row.onclick=()=>openEditor(row,i);
+      list.appendChild(row);
+    }
+    $('codes-listfoot').textContent=shown+' / '+tableCount+' codes affichés';
+  }
+  function openEditor(row,i){
+    const now=lireCode(i); const label=NOMS_CONNUS[i]||'';
+    row.onclick=null; row.style.cursor='default'; row.innerHTML='';
+    const box=document.createElement('div'); box.className='edit-box';
+    const idx=document.createElement('span'); idx.className='idx'; idx.textContent='#'+i;
+    const inp=document.createElement('input'); inp.type='text'; inp.value=now; inp.maxLength=8; inp.spellcheck=false; inp.inputMode='numeric';
+    const save=document.createElement('button'); save.className='btn-teal'; save.textContent='OK';
+    const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Annuler';
+    const cnt=document.createElement('span'); cnt.className='hint';
+    const upd=()=>{ cnt.textContent=inp.value.length+' / 8'; };
+    inp.oninput=()=>{ inp.value=inp.value.replace(/[^0-9]/g,''); upd(); }; upd();
+    box.append(idx,inp,save,cancel,cnt);
+    if(label){ const lb=document.createElement('span'); lb.className='tag'; lb.textContent=label; box.append(lb); }
+    row.appendChild(box);
+    inp.focus(); inp.select();
+    const commit=()=>{ try{
+        ecrireCode(i,inp.value);
+        if(estModifie(i)) changed.add(i); else changed.delete(i);
+        showMsg($('codes-msg'),'',''); render(); updateSummary();
+      } catch(e){ showMsg($('codes-msg'),e.message,'err'); inp.focus(); } };
+    save.onclick=commit;
+    inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
+    cancel.onclick=()=>{ showMsg($('codes-msg'),'',''); render(); };
+  }
+  function onLoad(){
+    changed.clear();
+    try{
+      const t=trouverTable(App.work); tableStart=t.start; tableCount=t.n; present=true;
+      $('codes-body').style.display='block'; $('codes-unavail').style.display='none';
+      $('codes-table').textContent=tableCount+' codes @0x'+tableStart.toString(16).toUpperCase();
+      showMsg($('codes-msg'),'',''); render();
+    }catch(e){
+      present=false; tableCount=0;
+      $('codes-body').style.display='none';
+      $('codes-unavail').style.display='block';
+      $('codes-unavail').textContent='ℹ️ '+e.message+' — éditeur de codes indisponible pour ce fichier.';
+    }
+  }
+  function onShow(){ if(present) render(); }
+  function countChanged(){ return changed.size; }
+  function reset(){ changed.clear(); if(present) render(); }
+  $('codes-search').oninput=render;
+  return { onLoad, onShow, countChanged, reset };
+})();
+
+/* =========================================================================
+   PURGE
+   ========================================================================= */
+const Purge = (function(){
+  function hex16(arr,off){ let s=''; for(let k=0;k<16;k++) s+=arr[off+k].toString(16).padStart(2,'0'); return s+'…'; }
+  function onLoad(){
+    if(!is16()){
+      $('purge-body').style.display='none';
+      $('purge-unavail').style.display='block';
+      $('purge-unavail').textContent='⚠️ Taille ≠ 16 Mo : cet outil nécessite un firmware complet de 16 Mo.';
+      App.intent.purgeBackup=false; return;
+    }
+    $('purge-body').style.display='block'; $('purge-unavail').style.display='none';
+    $('purge-before').textContent=hex16(App.original,BK_START);
+    const purged=App.original.subarray(BK_START,BK_START+16).every(b=>b===0xFF);
+    $('purge-state').textContent=purged?'déjà purgé':'non purgé';
+    $('purge-state').className='badge '+(purged?'ok':'warn');
+    onShow();
+  }
+  function onShow(){ $('purge-chk').checked = App.intent.purgeBackup; }
+  $('purge-chk').addEventListener('change',e=>{ App.intent.purgeBackup=e.target.checked; updateSummary(); });
+  return { onLoad, onShow };
+})();
+
+/* =========================================================================
+   BUILD (assemble tout dans le bon ordre)
+   ========================================================================= */
+function buildOutput(){
+  const out=App.work.slice();                                   // noms + codes
+  if(Names.countChanged()>0 && Names.hasArchive()) Names.fixArchiveChecksums(out);
+  if(App.intent.biome!=null) Biome.writeFields(out, App.intent.biome);
+  if(App.intent.clearSave){ out.fill(0xFF, CLR_START, CLR_END); }
+  else if(App.intent.lang!=null){ Lang.writeLang(out, App.intent.lang); Lang.fixCRC(out); }
+  if(App.intent.purgeBackup){ out.fill(0xFF, BK_START, BK_END); }
+  if(App.intent.biome!=null && is16()) Biome.fixChecksum(out);  // en dernier
+  return out;
+}
+function modList(){
+  const items=[];
+  if(App.intent.biome!=null) items.push(['🏝️ Biome', App.intent.biome+' — '+B_FIELDS[App.intent.biome].name]);
+  if(App.intent.clearSave) items.push(['🗑️ Effacer la save', 'oui (nouvelle partie)']);
+  if(App.intent.lang!=null) items.push(['🌍 Langue', langLabel(App.intent.lang)+(App.intent.clearSave?'  ⚠️ ignorée (save effacée)':'')]);
+  const nN=Names.countChanged(); if(nN>0) items.push(['✏️ Noms', nN+' modifié'+(nN>1?'s':'')]);
+  const nC=Codes.countChanged(); if(nC>0) items.push(['🔑 Codes', nC+' modifié'+(nC>1?'s':'')]);
+  if(App.intent.purgeBackup) items.push(['🧹 Purge backup', 'oui (0xEFF000–0xF00000 → 0xFF)']);
+  return items;
+}
+function updateSummary(){
+  const items=modList();
+  const total=items.length;
+  $('globalCount').textContent= total+' modification'+(total>1?'s':'');
+  $('patchAll').disabled = total===0;
+  $('recap-patch').disabled = total===0;
+  // pastilles d'onglet
+  const set=(id,on)=>{ const t=document.querySelector('.tab[data-tab="'+id+'"]'); if(t) t.classList.toggle('has-mods',on); };
+  set('biome', App.intent.biome!=null || App.intent.clearSave);
+  set('lang', App.intent.lang!=null);
+  set('names', Names.countChanged()>0);
+  set('codes', Codes.countChanged()>0);
+  set('purge', App.intent.purgeBackup);
+  set('recap', total>0);
+  // détail récap
+  const el=$('recap-list');
+  if(total===0){ el.innerHTML='<div class="unavail">Aucune modification en cours. Va dans un onglet pour modifier quelque chose, puis reviens ici.</div>'; }
+  else { el.innerHTML=items.map(it=>'<div class="drow"><span class="dlabel">'+it[0]+'</span><span class="dvalue">'+escapeHtml(it[1])+'</span></div>').join(''); }
+}
+
+function patchAndDownload(){
+  if(modList().length===0) return;
+  const out=buildOutput();
+  const base=App.fileName.replace(/\.bin$/i,'');
+  downloadBytes(out, base+'-PATCH.bin');
+  showMsg($('globalMsg'),'✅ Firmware patché : toutes les modifs appliquées + checksums recalculés. Flashe-le avec Asprogrammer.','ok');
+}
+function resetAll(){
+  if(!App.original) return;
+  App.work.set(App.original);
+  App.intent={ biome:null, lang:null, purgeBackup:false, clearSave:false };
+  Names.reset(); Codes.reset();
+  Biome.onShow(); Lang.onShow(); Purge.onShow();
+  showMsg($('globalMsg'),'','');
+  updateSummary();
+}
+
+/* =========================================================================
+   Chargement fichier + onglets
+   ========================================================================= */
+async function handleFile(f){
+  try{
+    App.fileName=f.name||"paradise.bin";
+    const buf=await f.arrayBuffer();
+    App.original=new Uint8Array(buf);
+    App.work=App.original.slice();
+    App.intent={ biome:null, lang:null, purgeBackup:false, clearSave:false };
+    $('fileInfo').textContent='📦 '+App.fileName+' ('+(App.original.length/1048576).toFixed(2)+' Mo)';
+    $('loadedInfo').style.display='block';
+    $('loadMsg').className='msg';
+    showMsg($('globalMsg'),'','');
+    $('tabsSection').style.display='block';
+    Biome.onLoad(); Lang.onLoad(); Names.onLoad(); Codes.onLoad(); Purge.onLoad();
+    updateSummary();
+  }catch(e){
+    showMsg($('loadMsg'),(e&&e.message)||'Fichier illisible.','err');
+  }
+}
+
+const drop=$('drop'), fileInput=$('file');
+drop.onclick=()=>fileInput.click();
+$('changeFileBtn').onclick=(e)=>{ e.stopPropagation(); fileInput.click(); };
+fileInput.onchange=e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); };
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+
+$('patchAll').onclick=patchAndDownload;
+$('recap-patch').onclick=patchAndDownload;
+$('resetAll').onclick=resetAll;
+
+const SHOW={ biome:Biome, lang:Lang, names:Names, codes:Codes, purge:Purge };
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    const id=tab.dataset.tab;
+    $('panel-'+id).classList.add('active');
+    if(id==='recap') updateSummary();
+    else if(SHOW[id] && SHOW[id].onShow) SHOW[id].onShow();
+  });
+});
+</script>
+</body>
+</html>

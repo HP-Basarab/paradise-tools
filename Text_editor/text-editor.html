@@ -38,15 +38,11 @@
   .item:last-child{border-bottom:0}
   .item:hover{background:#fdf0f6}
   .item.changed{background:var(--edit);border-left:4px solid var(--edit-line)}
+  .item.editing{cursor:default;background:#fffdf3;border-left:4px solid var(--edit-line)}
   .idx{color:var(--muted);font-size:11px;min-width:46px;font-variant-numeric:tabular-nums}
   .name{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14.5px;white-space:pre;flex:1 1 auto}
   .badge{font-size:11px;color:var(--teal-d);background:#e3f4f1;border-radius:20px;padding:2px 9px;white-space:nowrap}
   .was{font-size:11px;color:var(--muted);text-decoration:line-through;margin-left:6px}
-  .edit-box{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
-  .edit-box input{flex:1 1 220px}
-  .accents{display:flex;gap:4px;flex-wrap:wrap}
-  .accents button{padding:6px 9px;background:#f4e7ee}
-  .accents button:hover{background:#ecd7e2}
   .count{font-size:12px}
   .stick{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:8px}
   .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}
@@ -55,12 +51,26 @@
   .foot{font-size:12px;color:var(--muted);margin-top:10px}
   .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
   code{background:#f6eef2;padding:1px 5px;border-radius:5px;font-size:12px}
+
+  /* éditeur multi-langues */
+  .mlpanel{width:100%}
+  .mlhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .mltitle{font-size:12px;color:var(--muted)}
+  .mlrow{display:flex;gap:8px;align-items:center;margin:5px 0}
+  .mlrow.dirty .mllabel{color:var(--teal-d);font-weight:700}
+  .mllabel{flex:0 0 92px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .mlrow input{flex:1 1 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .mlrow .cnt{flex:0 0 54px;font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .accents{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+  .accents button{padding:6px 9px;background:#f4e7ee}
+  .accents button:hover{background:#ecd7e2}
+  .mlactions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🐣 Éditeur de noms — Tamagotchi Paradise</h1>
-  <div class="sub">Ouvre ton dump, clique un nom, change-le, télécharge. Les checksums sont recalculés automatiquement. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
+  <div class="sub">Ouvre ton dump, clique un nom, modifie-le dans une ou plusieurs langues, télécharge. Les checksums sont recalculés automatiquement. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
 
   <div class="card" id="loadCard">
     <div class="drop" id="drop">
@@ -84,7 +94,7 @@
         <button class="btn-teal" id="dlBtn" disabled>⬇️ Télécharger le .bin</button>
       </div>
       <div class="row-top" style="margin-top:10px">
-        <label class="hint">Langue&nbsp;:
+        <label class="hint">Langue affichée&nbsp;:
           <select id="lang">
             <option value="2" selected>Français (ta console)</option>
             <option value="1">Anglais</option>
@@ -105,7 +115,8 @@
     </div>
 
     <div class="foot">
-      Astuce : le badge « max N » = nombre de caractères maximum (le nouveau nom doit tenir dans la place de l'ancien).
+      Astuce : clique un nom pour ouvrir <b>toutes les langues</b> d'un coup. Laisse une langue inchangée pour ne pas y toucher.
+      Le badge « max N » = nombre de caractères maximum (le nouveau nom doit tenir dans la place de l'ancien, et ce maximum peut varier d'une langue à l'autre).
       Caractères gérés : lettres A–Z, chiffres, espace, et accents <code>É Ç Ê Ñ</code> + apostrophe.
     </div>
   </div>
@@ -116,7 +127,12 @@
 const MAIN = 0x111000, ARC2 = 0x32435241;
 
 let bytes=null, original=null, dv=null, fileName="paradise.bin";
-let curList=[], curTable=2;
+let curTable=2;
+let slotsByLang={}, aligned=false, entryCount=0;
+
+// langues humaines connues (table -> nom)
+const LANG_NAMES = {1:'Anglais',2:'Français',3:'Allemand',4:'Portugais',5:'Espagnol',6:'Italien'};
+const LANG_ORDER = [2,1,3,4,5,6]; // ordre d'affichage dans l'éditeur (Français d'abord)
 
 const $ = id => document.getElementById(id);
 
@@ -152,43 +168,42 @@ function locateStrings(){
   }
   throw new Error("Archive de textes (9 langues) introuvable.");
 }
-function contentEnd(base){
-  const nf=u32(base+12); let end=0;
-  for(let k=0;k<nf;k++){ const e=base+16+k*16; end=Math.max(end, u32(e+4)+u32(e+12)); }
-  return end;
-}
-function listStrings(tableIdx){
+// tous les slots non vides d'une table, dans l'ordre (sans filtrage) -> alignement par position
+function rawSlots(tableIdx){
   const STR=locateStrings();
   const off=u32(STR+16+tableIdx*16+4);
   const ln =u32(STR+16+tableIdx*16+12);
   const base=STR+off;
-  const res=[]; let i=0, cur=[], st=null;
+  const res=[]; let i=0, st=null;
   while(i<ln-1){
     const ci=dv.getUint16(base+i,true);
-    if(ci===0){
-      if(cur.length){
-        const t=cur.join('');
-        if(/[A-Za-z0-9ÉÇÊÑ]/.test(t)) res.push({addr:st, span:(base+i-st)+2, text:t});
-      }
-      cur=[]; st=null;
-    } else {
-      if(st===null) st=base+i;
-      cur.push(decChar(ci) ?? '·');
-    }
+    if(ci===0){ if(st!==null){ res.push({addr:st, span:(base+i-st)+2}); } st=null; }
+    else { if(st===null) st=base+i; }
     i+=2;
   }
   return res;
 }
+function buildLangIndex(){
+  slotsByLang={};
+  for(const t of LANG_ORDER) slotsByLang[t]=rawSlots(t);
+  const counts=LANG_ORDER.map(t=>slotsByLang[t].length);
+  entryCount=counts[0];
+  aligned = counts.every(c=>c===entryCount && c>0);
+}
 function textAt(addr,span){
   let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=dv.getUint16(p,true); if(ci===0)break; s+=(decChar(ci)??'·');} return s;
+}
+function origTextAt(addr,span){
+  let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=original[p]|(original[p+1]<<8); if(ci===0)break; s+=(decChar(ci)??'·');} return s;
 }
 function isChanged(addr,span){
   for(let p=addr;p<addr+span;p++) if(bytes[p]!==original[p]) return true;
   return false;
 }
+const looksTexty = t => /[A-Za-z0-9ÉÇÊÑ]/.test(t);
 
-// ---------- editing ----------
-function applyEdit(addr,span,newText){
+// ---------- édition ----------
+function encodeName(newText, span){
   const codes=[];
   for(const ch of newText){
     const c=encChar(ch);
@@ -196,6 +211,9 @@ function applyEdit(addr,span,newText){
     codes.push(c);
   }
   if(codes.length*2+2 > span) throw new Error('Trop long : '+codes.length+' caractères (maximum '+(span/2-1)+').');
+  return codes;
+}
+function writeName(addr, span, codes){
   let p=addr;
   for(const c of codes){ dv.setUint16(p,c,true); p+=2; }
   for(; p<addr+span; p++) bytes[p]=0;
@@ -214,75 +232,115 @@ function fixChecksums(arr){
 
 // ---------- UI ----------
 function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+kind; if(!txt) el.className='msg'; }
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function countChanged(){
+  let n=0;
+  for(const t of LANG_ORDER) for(const s of slotsByLang[t]||[]) if(isChanged(s.addr,s.span)) n++;
+  return n;
+}
 function refreshCounts(){
-  let n=0; for(const s of curList) if(isChanged(s.addr,s.span)) n++;
+  const n=countChanged();
   $('changeCount').textContent = n+' modification'+(n>1?'s':'');
   $('dlBtn').disabled = n===0;
 }
 function render(){
   const q=$('search').value.trim().toUpperCase();
   const list=$('list'); list.innerHTML='';
+  const ref=slotsByLang[curTable]||[];
   let shown=0;
-  curList.forEach((s,k)=>{
+  ref.forEach((s,ord)=>{
     const now=textAt(s.addr,s.span);
+    if(!looksTexty(now)) return;
     if(q && !now.toUpperCase().includes(q)) return;
     shown++;
     const maxc=s.span/2-1;
+    const changedHere = aligned
+      ? LANG_ORDER.some(t=>isChanged(slotsByLang[t][ord].addr, slotsByLang[t][ord].span))
+      : isChanged(s.addr,s.span);
     const row=document.createElement('div');
-    row.className='item'+(isChanged(s.addr,s.span)?' changed':'');
-    const origText = (function(){let t='';for(let p=s.addr;p<s.addr+s.span-1;p+=2){const ci=original[p]|(original[p+1]<<8);if(ci===0)break;t+=(decChar(ci)??'·');}return t;})();
+    row.className='item'+(changedHere?' changed':'');
     row.innerHTML =
-      '<span class="idx">#'+k+'</span>'+
-      '<span class="name">'+escapeHtml(now)+(isChanged(s.addr,s.span)?'<span class="was">'+escapeHtml(origText)+'</span>':'')+'</span>'+
+      '<span class="idx">#'+ord+'</span>'+
+      '<span class="name">'+escapeHtml(now)+(isChanged(s.addr,s.span)?'<span class="was">'+escapeHtml(origTextAt(s.addr,s.span))+'</span>':'')+'</span>'+
       '<span class="badge">max '+maxc+'</span>';
-    row.onclick=()=>openEditor(row,s);
+    row.onclick=()=>openEditor(row,ord);
     list.appendChild(row);
   });
-  $('listFoot').textContent = shown+' / '+curList.length+' textes affichés';
+  $('listFoot').textContent = shown+' / '+ref.length+' textes affichés'+(aligned?' · édition multi-langues active':' · ⚠️ langues non alignées : édition mono-langue');
   refreshCounts();
 }
-function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 
-function openEditor(row,s){
-  const maxc=s.span/2-1;
-  const now=textAt(s.addr,s.span);
-  row.onclick=null; row.style.cursor='default';
-  row.innerHTML='';
-  const box=document.createElement('div'); box.className='edit-box';
-  const inp=document.createElement('input'); inp.type='text'; inp.value=now; inp.maxLength=maxc; inp.spellcheck=false;
+function openEditor(row, ord){
+  row.onclick=null; row.className='item editing'; row.innerHTML='';
+  const panel=document.createElement('div'); panel.className='mlpanel';
+
+  const head=document.createElement('div'); head.className='mlhead';
+  const title=document.createElement('span'); title.className='mltitle';
+  title.textContent = aligned ? ('Entrée #'+ord+' — toutes les langues') : ('Entrée #'+ord+' — '+(LANG_NAMES[curTable]||('table '+curTable)));
+  head.appendChild(title);
+  panel.appendChild(head);
+
+  const tables = aligned ? LANG_ORDER : [curTable];
+  let lastFocused=null;
+  const fields=[];
+  tables.forEach(t=>{
+    const slot=slotsByLang[t][ord];
+    const maxc=slot.span/2-1;
+    const cur=textAt(slot.addr,slot.span);
+
+    const r=document.createElement('div'); r.className='mlrow';
+    const lab=document.createElement('span'); lab.className='mllabel'; lab.textContent=LANG_NAMES[t]||('table '+t);
+    const inp=document.createElement('input'); inp.type='text'; inp.value=cur; inp.maxLength=maxc; inp.spellcheck=false;
+    const cnt=document.createElement('span'); cnt.className='cnt';
+    const upd=()=>{ cnt.textContent=inp.value.length+' / '+maxc; r.classList.toggle('dirty', inp.value.toUpperCase()!==cur.toUpperCase()); };
+    inp.oninput=upd; inp.onfocus=()=>lastFocused=inp; upd();
+    inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
+    r.append(lab,inp,cnt); panel.appendChild(r);
+    fields.push({t, slot, inp, cur});
+  });
+
   const acc=document.createElement('div'); acc.className='accents';
-  ['É','È','Ê','Ç','Ñ',"'"].forEach(a=>{ // È proposé mais non géré -> on filtre à la validation
-    if(!(a in ENC)) return;
-    const b=document.createElement('button'); b.textContent=a; b.title='Insérer '+a;
-    b.onclick=()=>{ const p=inp.selectionStart??inp.value.length; inp.value=inp.value.slice(0,p)+a+inp.value.slice(inp.selectionEnd??p); inp.focus(); };
+  ['É','Ê','Ç','Ñ',"'"].forEach(a=>{ if(!(a in ENC)) return;
+    const b=document.createElement('button'); b.type='button'; b.textContent=a; b.title='Insérer '+a;
+    b.onclick=()=>{ const inp=lastFocused||fields[0].inp; const p=inp.selectionStart??inp.value.length;
+      inp.value=inp.value.slice(0,p)+a+inp.value.slice(inp.selectionEnd??p); inp.focus(); inp.dispatchEvent(new Event('input')); };
     acc.appendChild(b);
   });
+  panel.appendChild(acc);
+
+  const actions=document.createElement('div'); actions.className='mlactions';
   const save=document.createElement('button'); save.className='btn-teal'; save.textContent='OK';
   const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Annuler';
-  const cnt=document.createElement('span'); cnt.className='hint';
-  const upd=()=>{ cnt.textContent=inp.value.length+' / '+maxc; };
-  inp.oninput=upd; upd();
-  box.append(inp,acc,save,cancel,cnt);
-  row.appendChild(box);
-  inp.focus(); inp.select();
-  const commit=()=>{
-    const nv=inp.value.toUpperCase();
-    try{ applyEdit(s.addr,s.span,nv); showMsg($('editMsg'),'',''); render(); }
-    catch(e){ showMsg($('editMsg'),e.message,'err'); inp.focus(); }
-  };
+  actions.append(save,cancel); panel.appendChild(actions);
+
+  row.appendChild(panel);
+  fields[0].inp.focus(); fields[0].inp.select(); lastFocused=fields[0].inp;
+
+  function commit(){
+    // valider toutes les langues modifiées avant d'écrire quoi que ce soit
+    const ops=[];
+    try{
+      for(const f of fields){
+        const nv=f.inp.value.toUpperCase();
+        if(nv===f.cur.toUpperCase()) continue;       // langue non touchée -> on n'y touche pas
+        const codes=encodeName(nv, f.slot.span);
+        ops.push({slot:f.slot, codes});
+      }
+    }catch(e){ showMsg($('editMsg'),e.message,'err'); return; }
+    for(const op of ops) writeName(op.slot.addr, op.slot.span, op.codes);
+    showMsg($('editMsg'), ops.length? ('✅ '+ops.length+' langue'+(ops.length>1?'s':'')+' mise'+(ops.length>1?'s':'')+' à jour pour cette entrée.') : '', ops.length?'ok':'');
+    render();
+  }
   save.onclick=commit;
-  inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
   cancel.onclick=()=>{ showMsg($('editMsg'),'',''); render(); };
 }
 
 function loadTable(){
   curTable=parseInt($('lang').value,10);
-  try{ curList=listStrings(curTable); showMsg($('editMsg'),'',''); }
-  catch(e){ curList=[]; showMsg($('editMsg'),e.message,'err'); }
   render();
 }
 
-// ---------- file load ----------
+// ---------- chargement ----------
 async function handleFile(f){
   try{
     fileName=f.name||"paradise.bin";
@@ -291,11 +349,13 @@ async function handleFile(f){
     original=bytes.slice();
     dv=new DataView(bytes.buffer);
     const STR=locateStrings(); // valide le format
+    buildLangIndex();
     $('fileInfo').textContent='📦 '+fileName+' ('+(bytes.length/1048576).toFixed(1)+' Mo)';
-    $('archInfo').textContent='archive textes @0x'+STR.toString(16).toUpperCase();
+    $('archInfo').textContent='archive textes @0x'+STR.toString(16).toUpperCase()+' · '+entryCount+' entrées'+(aligned?'':' (non alignées)');
     $('loadMsg').className='msg';
     $('editor').style.display='block';
     $('loadCard').style.display='none';
+    showMsg($('editMsg'),'','');
     loadTable();
   }catch(e){
     showMsg($('loadMsg'), (e&&e.message)||'Fichier illisible.', 'err');
