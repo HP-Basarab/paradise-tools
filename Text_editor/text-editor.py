@@ -52,7 +52,9 @@ def code_vers_caractere(code):
         c = code - 0x00FD
         if 0x20 <= c <= 0x7E:
             return chr(c)
-    return '·'                           # caractère spécial non géré (affichage seulement)
+    if code == 0xF000:                   # saut de ligne
+        return '⏎'
+    return f'⟨{code:04X}⟩'      # glyphe non-latin : jeton ⟨XXXX⟩ (sans perte)
 
 
 def caractere_vers_code(c):
@@ -126,29 +128,127 @@ def lister_noms(buf, langue):
 
 
 # ----------------------------------------------------------------------------
-#  Modification
+#  Modification — ré-empaquetage (longueur illimitée)
 # ----------------------------------------------------------------------------
-def ecrire_nom(buf, adresse, place, nouveau_texte):
-    """Écrit un nouveau texte à la place de l'ancien (et complète avec des zéros)."""
-    codes = [caractere_vers_code(c) for c in nouveau_texte]
-    octets_necessaires = len(codes) * 2 + 2            # texte + terminateur
-    if octets_necessaires > place:
-        maxi = place // 2 - 1
-        raise ValueError(f'"{nouveau_texte}" est trop long : {len(codes)} caractères (maximum {maxi}).')
-    p = adresse
-    for code in codes:
-        struct.pack_into("<H", buf, p, code)
-        p += 2
-    for q in range(p, adresse + place):                # remplir le reste de zéros
-        buf[q] = 0
+#  On ne réécrit plus "sur place" (ce qui imposait que le nouveau nom tienne
+#  dans l'ancien). On reconstruit entièrement l'archive de textes : un nom peut
+#  donc être plus long ou plus court que l'original. L'archive Strings est le
+#  dernier fichier de l'archive principale ; elle grandit dans la zone libre
+#  qui suit (octets 0xFF), sans déplacer aucun autre fichier.
+
+def indice_fichier_textes(buf):
+    """Renvoie l'indice du fichier Strings dans l'archive principale."""
+    nb = lire_mot(buf, ADRESSE_ARCHIVE_PRINCIPALE + 12)
+    for i in range(nb):
+        debut = ADRESSE_ARCHIVE_PRINCIPALE + lire_mot(buf, ADRESSE_ARCHIVE_PRINCIPALE + 16 + i * 16 + 4)
+        if 0 <= debut < len(buf) - 16 and lire_mot(buf, debut) == MAGIC_ARC2 and lire_mot(buf, debut + 12) == 9:
+            return i
+    raise RuntimeError("Archive de textes introuvable.")
 
 
-def recalculer_checksums(buf):
-    """Recalcule les deux checksums (somme des octets). Ordre important : textes d'abord."""
-    archive_textes = trouver_archive_textes(buf)
-    for archive in (archive_textes, ADRESSE_ARCHIVE_PRINCIPALE):
-        somme = sum(buf[archive + 8: archive + fin_du_contenu(buf, archive)]) & 0xFFFFFFFF
-        struct.pack_into("<I", buf, archive + 4, somme)
+def parser_toutes_tables(buf):
+    """Parse les 9 tables -> liste de 9 listes de chaînes ; chaque chaîne = liste de codes 16 bits."""
+    archive = trouver_archive_textes(buf)
+    tables = []
+    for t in range(9):
+        decalage = lire_mot(buf, archive + 16 + t * 16 + 4)
+        longueur = lire_mot(buf, archive + 16 + t * 16 + 12)
+        base = archive + decalage
+        chaines, courant, i = [], [], 0
+        while i < longueur - 1:
+            code = struct.unpack_from("<H", buf, base + i)[0]
+            if code == 0:
+                chaines.append(courant); courant = []
+            else:
+                courant.append(code)
+            i += 2
+        tables.append(chaines)
+    return tables
+
+
+def construire_archive_textes(tables):
+    """Reconstruit l'archive Strings (en-tête + 9 entrées + données) -> bytearray."""
+    n = 9
+    taille_entete = 16 + n * 16
+    blobs = []
+    for chaines in tables:
+        ba = bytearray()
+        for s in chaines:
+            for code in s:
+                ba += struct.pack("<H", code & 0xFFFF)
+            ba += b"\x00\x00"
+        blobs.append(bytes(ba))
+    out = bytearray(taille_entete)
+    struct.pack_into("<I", out, 0, MAGIC_ARC2)
+    struct.pack_into("<I", out, 12, n)
+    curseur = taille_entete
+    for t in range(n):
+        e = 16 + t * 16
+        struct.pack_into("<I", out, e + 0, 0)               # flags
+        struct.pack_into("<I", out, e + 4, curseur)         # offset (relatif à l'archive)
+        struct.pack_into("<I", out, e + 8, len(blobs[t]))   # clen
+        struct.pack_into("<I", out, e + 12, len(blobs[t]))  # ulen
+        out += blobs[t]
+        curseur += len(blobs[t])
+    total = len(out)
+    struct.pack_into("<I", out, 8, total - 16)              # champ length = total - 16
+    somme = sum(out[8:total]) & 0xFFFFFFFF                  # checksum = somme [+8 : fin]
+    struct.pack_into("<I", out, 4, somme)
+    return bytes(out)
+
+
+# L'archive Strings grandit DANS la zone libre (0xFF) qui la suit, SANS décaler
+# les régions à adresses fixes au-delà (bloc Version 0xD49000, ghosts, save
+# 0xEFE000, …). On écrit donc sur place dans la copie 16 Mo intacte.
+LIMITE_ZONE_LIBRE = 0xD49000   # 1ère région fixe après les assets
+
+def reempaqueter(buf, tables):
+    """Reconstruit le firmware avec les tables modifiées. Renvoie un bytearray 16 Mo
+    où SEULE la zone de l'archive Strings change (rien d'autre n'est déplacé)."""
+    nouvelle = construire_archive_textes(tables)
+    fk = indice_fichier_textes(buf)
+    strOff = lire_mot(buf, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 4)
+    strLen = lire_mot(buf, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 12)
+    strAbs = ADRESSE_ARCHIVE_PRINCIPALE + strOff
+    fin_main = fin_du_contenu(buf, ADRESSE_ARCHIVE_PRINCIPALE)
+    if strOff + strLen != fin_main:
+        raise RuntimeError("L'archive Strings n'est pas le dernier fichier de l'archive principale.")
+    if strAbs + len(nouvelle) > LIMITE_ZONE_LIBRE:
+        raise RuntimeError(f"Textes trop volumineux : dépasse la zone libre avant {LIMITE_ZONE_LIBRE:#x}. Raccourcis des noms.")
+    out = bytearray(buf)                       # copie 16 Mo intacte
+    out[strAbs:strAbs + len(nouvelle)] = nouvelle   # écrit sur place
+    if len(nouvelle) < strLen:                 # reliquat -> zone libre (0xFF)
+        for o in range(strAbs + len(nouvelle), strAbs + strLen):
+            out[o] = 0xFF
+    # maj entrée main file (clen/ulen)
+    struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 8, len(nouvelle))
+    struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 12, len(nouvelle))
+    # maj champ length + checksum de l'archive principale
+    new_fin_main = strOff + len(nouvelle)
+    struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 8, new_fin_main - 16)
+    somme = sum(out[ADRESSE_ARCHIVE_PRINCIPALE + 8: ADRESSE_ARCHIVE_PRINCIPALE + new_fin_main]) & 0xFFFFFFFF
+    struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 4, somme)
+    return out
+
+
+def texte_vers_codes(texte):
+    """Convertit un texte saisi en liste de codes. Gère les jetons ⟨XXXX⟩ (glyphes non-latins)."""
+    codes, i = [], 0
+    while i < len(texte):
+        ch = texte[i]
+        if ch == '⟨':
+            fin = texte.find('⟩', i)
+            if fin > i:
+                hexa = texte[i + 1:fin]
+                try:
+                    codes.append(int(hexa, 16) & 0xFFFF); i = fin + 1; continue
+                except ValueError:
+                    pass
+            raise ValueError("jeton ⟨…⟩ invalide (format attendu : ⟨ABCD⟩)")
+        if ch == '⏎':
+            codes.append(0xF000); i += 1; continue
+        codes.append(caractere_vers_code(ch)); i += 1
+    return codes
 
 
 # ----------------------------------------------------------------------------
@@ -167,7 +267,7 @@ def main():
     p.add_argument("-l", "--liste", action="store_true", help="afficher tous les noms puis quitter")
     p.add_argument("--filtre", default="", help="avec --liste : ne montrer que les noms contenant ce mot")
     p.add_argument("--langue", type=int, default=LANGUE_FRANCAIS,
-                   help="table de langue (défaut 2 = français ; 1=EN 3=DE 4=PT 5=ES 6=IT)")
+                   help="table de langue (défaut 2 = français ; 0=JP 1=EN 3=DE 4=PT 5=ES 6=IT 7=ZH 8=KO)")
     p.add_argument("-o", "--sortie", help="fichier de sortie (défaut : <nom>-RENOMME.bin)")
     args = p.parse_args()
 
@@ -189,25 +289,33 @@ def main():
     if not args.noms or len(args.noms) % 2 != 0:
         p.error('donne des paires : "ANCIEN" "NOUVEAU". (Ou utilise --liste pour voir les noms.)')
 
-    table = {texte: (adresse, place) for adresse, place, texte in lister_noms(buf, args.langue)}
-    paires = list(zip(args.noms[0::2], args.noms[1::2]))
+    # On repère chaque ancien nom par son indice dans la table de langue choisie,
+    # puis on reconstruit l'archive (longueur du nouveau nom libre).
+    tables = parser_toutes_tables(buf)
+    chaines = tables[args.langue]
+    # texte lisible -> indice (première occurrence)
+    index_par_texte = {}
+    for idx, s in enumerate(chaines):
+        txt = "".join(code_vers_caractere(c) or '·' for c in s)
+        index_par_texte.setdefault(txt, idx)
 
+    paires = list(zip(args.noms[0::2], args.noms[1::2]))
     for ancien, nouveau in paires:
-        if ancien not in table:
+        if ancien not in index_par_texte:
             print(f'  ✗ "{ancien}" introuvable. (Vérifie l\'orthographe, ou lance --liste.)')
             sys.exit(1)
-        adresse, place = table[ancien]
+        idx = index_par_texte[ancien]
         try:
-            ecrire_nom(buf, adresse, place, nouveau.upper())
+            chaines[idx] = texte_vers_codes(nouveau.upper())
         except ValueError as e:
             print(f"  ✗ {e}")
             sys.exit(1)
         print(f'  ✓ "{ancien}" → "{nouveau.upper()}"')
 
-    recalculer_checksums(buf)
+    out = reempaqueter(buf, tables)
 
     sortie = args.sortie or (os.path.splitext(args.fichier)[0] + "-RENOMME.bin")
-    open(sortie, "wb").write(buf)
+    open(sortie, "wb").write(out)
     print(f"\nTerminé ! Fichier prêt à flasher : {sortie}")
 
 
