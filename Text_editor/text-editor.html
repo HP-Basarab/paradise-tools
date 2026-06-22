@@ -325,22 +325,27 @@ function buildStringsArchive(){
   let s=0; for(let o=8;o<total;o++) s=(s+out[o])>>>0; d.setUint32(4,s>>>0,true);
   return out;
 }
+// L'archive Strings grandit DANS la zone libre (0xFF) qui la suit, SANS décaler
+// les régions à adresses fixes situées au-delà (bloc Version 0xD49000, ghosts,
+// save 0xEFE000, …). On écrit donc sur place dans la copie 16 Mo intacte.
+const FREE_LIMIT = 0xD49000;   // 1ère région fixe après les assets : rien ne doit la dépasser/bouger
 function repack(){
   const newStr=buildStringsArchive();
   const fk=strFileIdx;
   const strOff=u32(MAIN+16+fk*16+4), strOldLen=u32(MAIN+16+fk*16+12), strAbs=MAIN+strOff;
   if(strOff+strOldLen!==contentEnd(MAIN)) throw new Error("L'archive Strings n'est pas le dernier fichier de l'archive principale.");
-  const tail=bytes.slice(strAbs+strOldLen), head=bytes.slice(0,strAbs);
-  let out=new Uint8Array(head.length+newStr.length+tail.length);
-  out.set(head,0); out.set(newStr,head.length); out.set(tail,head.length+newStr.length);
+  if(strAbs+newStr.length > FREE_LIMIT)
+    throw new Error("Textes trop volumineux : dépasse la zone libre avant 0x"+FREE_LIMIT.toString(16).toUpperCase()+". Raccourcis des noms.");
+  const out=bytes.slice();                 // copie 16 Mo intacte : SEULE la zone Strings change
+  out.set(newStr, strAbs);                 // écrit la nouvelle archive sur place
+  if(newStr.length < strOldLen)            // si plus courte : reliquat -> zone libre (0xFF)
+    out.fill(0xFF, strAbs+newStr.length, strAbs+strOldLen);
   const od=new DataView(out.buffer);
   od.setUint32(MAIN+16+fk*16+8, newStr.length, true);
   od.setUint32(MAIN+16+fk*16+12, newStr.length, true);
   const newMainEnd=strOff+newStr.length;
   od.setUint32(MAIN+8, newMainEnd-16, true);
   let s=0; for(let o=MAIN+8;o<MAIN+newMainEnd;o++) s=(s+out[o])>>>0; od.setUint32(MAIN+4, s>>>0, true);
-  if(out.length<0x1000000){ const p=new Uint8Array(0x1000000); p.set(out); p.fill(0xFF,out.length); out=p; }
-  else if(out.length>0x1000000){ out=out.slice(0,0x1000000); }
   return out;
 }
 

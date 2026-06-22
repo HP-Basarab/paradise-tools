@@ -197,8 +197,14 @@ def construire_archive_textes(tables):
     return bytes(out)
 
 
+# L'archive Strings grandit DANS la zone libre (0xFF) qui la suit, SANS décaler
+# les régions à adresses fixes au-delà (bloc Version 0xD49000, ghosts, save
+# 0xEFE000, …). On écrit donc sur place dans la copie 16 Mo intacte.
+LIMITE_ZONE_LIBRE = 0xD49000   # 1ère région fixe après les assets
+
 def reempaqueter(buf, tables):
-    """Reconstruit le firmware avec les tables modifiées. Renvoie un nouveau bytearray (16 Mo)."""
+    """Reconstruit le firmware avec les tables modifiées. Renvoie un bytearray 16 Mo
+    où SEULE la zone de l'archive Strings change (rien d'autre n'est déplacé)."""
     nouvelle = construire_archive_textes(tables)
     fk = indice_fichier_textes(buf)
     strOff = lire_mot(buf, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 4)
@@ -207,8 +213,13 @@ def reempaqueter(buf, tables):
     fin_main = fin_du_contenu(buf, ADRESSE_ARCHIVE_PRINCIPALE)
     if strOff + strLen != fin_main:
         raise RuntimeError("L'archive Strings n'est pas le dernier fichier de l'archive principale.")
-    queue = bytes(buf[strAbs + strLen:])
-    out = bytearray(buf[:strAbs]) + bytearray(nouvelle) + bytearray(queue)
+    if strAbs + len(nouvelle) > LIMITE_ZONE_LIBRE:
+        raise RuntimeError(f"Textes trop volumineux : dépasse la zone libre avant {LIMITE_ZONE_LIBRE:#x}. Raccourcis des noms.")
+    out = bytearray(buf)                       # copie 16 Mo intacte
+    out[strAbs:strAbs + len(nouvelle)] = nouvelle   # écrit sur place
+    if len(nouvelle) < strLen:                 # reliquat -> zone libre (0xFF)
+        for o in range(strAbs + len(nouvelle), strAbs + strLen):
+            out[o] = 0xFF
     # maj entrée main file (clen/ulen)
     struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 8, len(nouvelle))
     struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 16 + fk * 16 + 12, len(nouvelle))
@@ -217,12 +228,6 @@ def reempaqueter(buf, tables):
     struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 8, new_fin_main - 16)
     somme = sum(out[ADRESSE_ARCHIVE_PRINCIPALE + 8: ADRESSE_ARCHIVE_PRINCIPALE + new_fin_main]) & 0xFFFFFFFF
     struct.pack_into("<I", out, ADRESSE_ARCHIVE_PRINCIPALE + 4, somme)
-    # checksum de l'archive Strings : déjà calculé dans construire_archive_textes()
-    # ajuste à 16 Mo exactement
-    if len(out) < 0x1000000:
-        out += b"\xff" * (0x1000000 - len(out))
-    elif len(out) > 0x1000000:
-        out = out[:0x1000000]
     return out
 
 
