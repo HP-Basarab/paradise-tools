@@ -8,18 +8,17 @@
   :root{
     --pink:#f48fb1; --pink-d:#ec5f93; --teal:#26a69a; --teal-d:#1d877d;
     --bg:#fdf3f7; --card:#ffffff; --ink:#3a2e34; --muted:#8a7a82;
-    --line:#f0d9e4; --edit:#fff7da; --edit-line:#f3d97a; --ok:#2e9e6b; --err:#d4513e;
+    --line:#f0d9e4; --edit:#fff7da; --edit-line:#f3d97a; --ok:#2e9e6b; --err:#d4513e; --warn:#b8860b;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
        background:var(--bg);color:var(--ink);line-height:1.45}
-  .wrap{max-width:920px;margin:0 auto;padding:18px 16px 80px}
+  .wrap{max-width:940px;margin:0 auto;padding:18px 16px 80px}
   h1{font-size:21px;margin:.2em 0 .1em}
   .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;
         box-shadow:0 1px 0 rgba(0,0,0,.02)}
-  .drop{border:2px dashed var(--pink);border-radius:14px;padding:26px;text-align:center;background:#fff;cursor:pointer;
-        transition:.15s}
+  .drop{border:2px dashed var(--pink);border-radius:14px;padding:26px;text-align:center;background:#fff;cursor:pointer;transition:.15s}
   .drop:hover,.drop.over{background:#fff0f6;border-color:var(--pink-d)}
   .drop b{color:var(--pink-d)}
   button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
@@ -28,6 +27,7 @@
   .btn-teal:disabled{background:#bcd;cursor:not-allowed}
   .btn-ghost{background:#f4e7ee;color:var(--ink)}
   .btn-ghost:hover{background:#ecd7e2}
+  .btn-sm{padding:5px 9px;font-size:12px}
   .row-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .grow{flex:1 1 auto}
   input[type=text],select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
@@ -40,37 +40,54 @@
   .item.changed{background:var(--edit);border-left:4px solid var(--edit-line)}
   .item.editing{cursor:default;background:#fffdf3;border-left:4px solid var(--edit-line)}
   .idx{color:var(--muted);font-size:11px;min-width:46px;font-variant-numeric:tabular-nums}
-  .name{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14.5px;white-space:pre;flex:1 1 auto}
+  .glyphs{flex:1 1 auto;display:flex;align-items:center;min-height:24px;overflow:hidden}
+  .glyphs canvas{image-rendering:pixelated;height:24px}
   .badge{font-size:11px;color:var(--teal-d);background:#e3f4f1;border-radius:20px;padding:2px 9px;white-space:nowrap}
-  .was{font-size:11px;color:var(--muted);text-decoration:line-through;margin-left:6px}
+  .badge.gray{color:var(--muted);background:#f0e7ec}
   .count{font-size:12px}
   .stick{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:8px}
   .msg{font-size:13px;padding:8px 10px;border-radius:9px;margin-top:8px;display:none}
   .msg.err{display:block;background:#fdece8;color:var(--err)}
   .msg.ok{display:block;background:#e7f6ee;color:var(--ok)}
+  .msg.warn{display:block;background:#fff6e0;color:var(--warn)}
   .foot{font-size:12px;color:var(--muted);margin-top:10px}
   .pill{display:inline-block;background:#fff0f6;border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:12px;margin-right:6px}
   code{background:#f6eef2;padding:1px 5px;border-radius:5px;font-size:12px}
 
-  /* éditeur multi-langues */
   .mlpanel{width:100%}
   .mlhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
   .mltitle{font-size:12px;color:var(--muted)}
-  .mlrow{display:flex;gap:8px;align-items:center;margin:5px 0}
+  .mlrow{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
   .mlrow.dirty .mllabel{color:var(--teal-d);font-weight:700}
-  .mllabel{flex:0 0 92px;font-size:12.5px;color:var(--muted);font-weight:600}
-  .mlrow input{flex:1 1 auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .mlrow .cnt{flex:0 0 54px;font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .mllabel{flex:0 0 110px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .mlprev{flex:0 0 auto;min-width:40px;min-height:26px;display:flex;align-items:center;background:#fafafa;border:1px solid var(--line);border-radius:6px;padding:2px 5px}
+  .mlprev canvas{image-rendering:pixelated;height:26px}
+  .mlrow input{flex:1 1 180px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .mlrow input.nonlatin{background:#faf6ff;border-color:#e3d4f5}
+  .mlrow .cnt{flex:0 0 56px;font-size:11px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
   .accents{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
   .accents button{padding:6px 9px;background:#f4e7ee}
   .accents button:hover{background:#ecd7e2}
   .mlactions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+
+  /* sélecteur de glyphes */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50}
+  .overlay.open{display:flex}
+  .picker{background:#fff;border-radius:14px;width:min(720px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+  .picker header{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .picker header h3{margin:0;font-size:15px;flex:1 1 auto}
+  .pgrid{padding:10px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:4px}
+  .gcell{border:1px solid var(--line);border-radius:6px;background:#fafafa;cursor:pointer;display:flex;flex-direction:column;align-items:center;padding:3px 0;transition:.1s}
+  .gcell:hover{background:#fff0f6;border-color:var(--pink)}
+  .gcell canvas{image-rendering:pixelated;height:30px}
+  .gcell span{font-size:9px;color:var(--muted);font-family:ui-monospace,monospace}
+  .pnav{padding:8px 16px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🐣 Éditeur de noms — Tamagotchi Paradise</h1>
-  <div class="sub">Ouvre ton dump, clique un nom, modifie-le dans une ou plusieurs langues, télécharge. Les checksums sont recalculés automatiquement. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
+  <div class="sub">Ouvre ton dump, clique un nom, modifie-le dans une ou plusieurs langues (les 9, y compris 日本語・中文・한국어), télécharge. <b>Aucune limite de longueur</b> et les glyphes des langues non-latines sont <b>affichés tels que sur la console</b>. Tout se passe dans ton navigateur — aucun fichier n'est envoyé nulle part.</div>
 
   <div class="card" id="loadCard">
     <div class="drop" id="drop">
@@ -94,17 +111,8 @@
         <button class="btn-teal" id="dlBtn" disabled>⬇️ Télécharger le .bin</button>
       </div>
       <div class="row-top" style="margin-top:10px">
-        <label class="hint">Langue affichée&nbsp;:
-          <select id="lang">
-            <option value="2" selected>Français (ta console)</option>
-            <option value="1">Anglais</option>
-            <option value="3">Allemand</option>
-            <option value="4">Portugais</option>
-            <option value="5">Espagnol</option>
-            <option value="6">Italien</option>
-          </select>
-        </label>
-        <input type="text" id="search" class="grow" placeholder="🔎 Filtrer (ex. CHAPEAU, MAMETCHI, ROCKY…)">
+        <label class="hint">Langue affichée&nbsp;: <select id="lang"></select></label>
+        <input type="text" id="search" class="grow" placeholder="🔎 Filtrer (langues latines : ex. CHAPEAU, MAMETCHI…)">
       </div>
       <div class="msg" id="editMsg"></div>
     </div>
@@ -115,9 +123,25 @@
     </div>
 
     <div class="foot">
-      Astuce : clique un nom pour ouvrir <b>toutes les langues</b> d'un coup. Laisse une langue inchangée pour ne pas y toucher.
-      Le badge « max N » = nombre de caractères maximum (le nouveau nom doit tenir dans la place de l'ancien, et ce maximum peut varier d'une langue à l'autre).
-      Caractères gérés : lettres A–Z, chiffres, espace, et accents <code>É Ç Ê Ñ</code> + apostrophe.
+      Clique un nom pour ouvrir <b>toutes les langues</b>. Latines&nbsp;: tape directement (A–Z, chiffres, espace, <code>É Ç Ê Ñ</code>, apostrophe).
+      Non-latines (日本語・中文・한국어)&nbsp;: les glyphes s'affichent ; pour modifier, ouvre le <b>sélecteur de glyphes</b> 🔤 et clique les caractères. En interne chaque glyphe est un jeton <code>⟨XXXX⟩</code>.
+    </div>
+  </div>
+</div>
+
+<!-- sélecteur de glyphes -->
+<div class="overlay" id="overlay">
+  <div class="picker">
+    <header>
+      <h3>Sélecteur de glyphes</h3>
+      <input type="text" id="pkSearch" placeholder="aller au code hex (ex. 1332)" style="width:170px">
+      <button class="btn-ghost btn-sm" id="pkClose">Fermer</button>
+    </header>
+    <div class="pgrid" id="pgrid"></div>
+    <div class="pnav">
+      <button class="btn-ghost btn-sm" id="pkPrev">◀ précédent</button>
+      <span class="hint" id="pkInfo"></span>
+      <button class="btn-ghost btn-sm" id="pkNext">suivant ▶</button>
     </div>
   </div>
 </div>
@@ -126,27 +150,30 @@
 "use strict";
 const MAIN = 0x111000, ARC2 = 0x32435241;
 
-let bytes=null, original=null, dv=null, fileName="paradise.bin";
+let bytes=null, dv=null, fileName="paradise.bin";
 let curTable=2;
-let slotsByLang={}, aligned=false, entryCount=0;
+let strBase=0, strFileIdx=-1;
+let tables=[], tablesOrig=[], entryCount=0;
 
-// langues humaines connues (table -> nom)
-const LANG_NAMES = {1:'Anglais',2:'Français',3:'Allemand',4:'Portugais',5:'Espagnol',6:'Italien'};
-const LANG_ORDER = [2,1,3,4,5,6]; // ordre d'affichage dans l'éditeur (Français d'abord)
-
+// 0=JP, 1=EN, 2=FR, 3=DE, 4=PT, 5=ES, 6=IT, 7=ZH, 8=KO
+const LANG_NAMES = {0:'日本語 (Japonais)',1:'Anglais',2:'Français',3:'Allemand',4:'Portugais',5:'Espagnol',6:'Italien',7:'中文 (Chinois)',8:'한국어 (Coréen)'};
+const LATIN_TABLES = new Set([1,2,3,4,5,6]);
+const LANG_ORDER = [2,1,3,4,5,6,0,7,8];
 const $ = id => document.getElementById(id);
+const isLatinTable = t => LATIN_TABLES.has(t);
 
-// ---------- charset ----------
+// ---------- charset latin ----------
 const DEC = {0x197:'É',0x196:'Ç',0x199:'Ê',0x1AA:'Ñ',0x178:"'"};
 const ENC = {'É':0x197,'Ç':0x196,'Ê':0x199,'Ñ':0x1AA,"'":0x178};
+const NL = 0xF000;
 function decChar(ci){
   if(ci===0) return null;
   if(DEC[ci]!==undefined) return DEC[ci];
   if(ci===0x0131) return ' ';
   if(ci>=0x0132 && ci<=0x013B) return String.fromCharCode(48+(ci-0x0132));
   if(ci>=0x00FD && ci<=0x017A){ const a=ci-0x00FD; if(a>=0x20&&a<=0x7E) return String.fromCharCode(a); }
-  if(ci===0xF000) return '⏎';
-  return '·';
+  if(ci===NL) return '⏎';
+  return null;
 }
 function encChar(c){
   if(ENC[c]!==undefined) return ENC[c];
@@ -156,155 +183,232 @@ function encChar(c){
   if(o>=0x20&&o<=0x7E) return 0x00FD+o;
   return null;
 }
+function codesToDisplay(codes){
+  let s='';
+  for(const ci of codes){ const c=decChar(ci); s += (c!==null)? c : '⟨'+ci.toString(16).toUpperCase().padStart(4,'0')+'⟩'; }
+  return s;
+}
+function displayToCodes(text){
+  const codes=[]; let i=0;
+  while(i<text.length){
+    const ch=text[i];
+    if(ch==='⟨'){
+      const end=text.indexOf('⟩',i);
+      if(end>i){ const hex=text.slice(i+1,end); const v=parseInt(hex,16);
+        if(!isNaN(v)&&/^[0-9a-fA-F]{1,4}$/.test(hex)){ codes.push(v&0xFFFF); i=end+1; continue; } }
+      throw new Error('Jeton ⟨…⟩ invalide. Format : ⟨ABCD⟩ (code hex sur 1 à 4 chiffres).');
+    }
+    if(ch==='⏎'){ codes.push(NL); i++; continue; }
+    const c=encChar(ch.toUpperCase());
+    if(c===null) throw new Error('Caractère non géré : "'+ch+'". (A–Z, chiffres, espace, É Ç Ê Ñ, apostrophe, ou jeton ⟨xxxx⟩.)');
+    codes.push(c); i++;
+  }
+  return codes;
+}
+const looksTexty = codes => codes.some(ci=>{const c=decChar(ci); return c && /[A-Za-z0-9ÉÇÊÑ]/.test(c);});
+
+// ---------- police device (rendu glyphes) ----------
+const Font = (()=>{
+  let pix=0, nsub=0;
+  const cache=new Map();      // code -> Uint8Array(256) valeurs 0..3
+  const u16=o=>dv.getUint16(o,true), u32=o=>dv.getUint32(o,true);
+  function locate(){
+    const SPK=MAIN+u32(MAIN+16+1*16+4);   // package Sprites = file1 du main
+    const nspr=u32(SPK)/4|0;
+    let best=-1,bestN=0;
+    for(let i=0;i<nspr;i++){
+      const a=SPK+u32(SPK+i*4);
+      if(a+24>bytes.length) continue;
+      const ns=u16(a+6);
+      if(bytes[a+8]===16 && bytes[a+9]===16 && ns>bestN){ bestN=ns; best=a; }
+    }
+    if(best<0) throw new Error('police introuvable');
+    pix=best+u16(best+20); nsub=bestN;
+  }
+  function rle(d){
+    const out=[]; let i=0;
+    while(i<d.length){ const c=d[i++]; if(c===0)break;
+      if(c&0x80){ const n=c&0x7f; for(let k=0;k<n;k++)out.push(d[i++]); }
+      else{ const v=d[i++]; for(let k=0;k<c;k++)out.push(v); } }
+    return out;
+  }
+  function pixels(code){               // -> Uint8Array(256), valeurs 0..3 ; null si hors-police
+    // les codes texte sont 1-basés (0 = terminateur de chaîne) : glyphe = sous-sprite code-1
+    if(code<1 || code-1>=nsub) return null;
+    if(cache.has(code)) return cache.get(code);
+    const idx=code-1;
+    const rec=pix+idx*8; let off=u32(rec); const ln=u32(rec+4); const raw=off>>>31; off&=0x7fffffff;
+    let d=[]; for(let o=pix+off;o<pix+off+ln;o++) d.push(bytes[o]^0x53);   // XOR d'abord
+    if(!raw) d=rle(d);
+    const px=new Uint8Array(256); let p=0;
+    for(const byte of d){ for(let e=0;e<4;e++){ if(p<256) px[p++]=(byte>>(e*2))&3; } }
+    cache.set(code,px); return px;
+  }
+  // dessine une suite de codes sur un canvas (échelle = px/pixel device)
+  function renderCodes(codes, scale){
+    scale=scale||2;
+    const drawable=codes.filter(c=>c!==0 && c!==NL);
+    const cw=16*scale, h=16*scale;
+    const cv=document.createElement('canvas');
+    cv.width=Math.max(cw, drawable.length*cw + (drawable.length-1)*scale); cv.height=h;
+    const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
+    let x=0;
+    for(const code of codes){
+      if(code===NL){ continue; }
+      const px=pixels(code);
+      if(px){
+        for(let i=0;i<256;i++){ const v=px[i]; if(!v)continue;
+          const gx=i%16, gy=(i/16|0);
+          // 2bpp : 1..3 -> niveaux de gris (3=plein)
+          const lvl=[255,150,90,40][v];
+          ctx.fillStyle='rgb('+lvl+','+lvl+','+lvl+')';
+          ctx.fillRect(x+gx*scale, gy*scale, scale, scale);
+        }
+      } else {
+        ctx.fillStyle='#e0d0db'; ctx.fillRect(x, 0, cw, h); // glyphe inconnu
+      }
+      x += cw + scale;
+    }
+    if(cv.width===0) cv.width=1;
+    return cv;
+  }
+  return { locate, pixels, renderCodes, get nsub(){return nsub;} };
+})();
 
 // ---------- archive helpers ----------
 const u32 = o => dv.getUint32(o,true);
 function locateStrings(){
   if(u32(MAIN)!==ARC2) throw new Error("Ce fichier ne ressemble pas à un firmware Paradise (archive introuvable à 0x111000).");
   const nf=u32(MAIN+12);
-  for(let k=0;k<nf;k++){
-    const sub=MAIN+u32(MAIN+16+k*16+4);
-    if(sub>0 && sub<dv.byteLength-16 && u32(sub)===ARC2 && u32(sub+12)===9) return sub;
-  }
+  for(let k=0;k<nf;k++){ const sub=MAIN+u32(MAIN+16+k*16+4);
+    if(sub>0 && sub<dv.byteLength-16 && u32(sub)===ARC2 && u32(sub+12)===9){ strFileIdx=k; return sub; } }
   throw new Error("Archive de textes (9 langues) introuvable.");
 }
-// tous les slots non vides d'une table, dans l'ordre (sans filtrage) -> alignement par position
-function rawSlots(tableIdx){
-  const STR=locateStrings();
-  const off=u32(STR+16+tableIdx*16+4);
-  const ln =u32(STR+16+tableIdx*16+12);
-  const base=STR+off;
-  const res=[]; let i=0, st=null;
-  while(i<ln-1){
-    const ci=dv.getUint16(base+i,true);
-    if(ci===0){ if(st!==null){ res.push({addr:st, span:(base+i-st)+2}); } st=null; }
-    else { if(st===null) st=base+i; }
-    i+=2;
+function contentEnd(base){ let end=0; const nf=u32(base+12);
+  for(let k=0;k<nf;k++){ const e=base+16+k*16; end=Math.max(end, u32(e+4)+u32(e+12)); } return end; }
+function parseTables(){
+  tables=[];
+  for(let t=0;t<9;t++){
+    const e=strBase+16+t*16; const off=u32(e+4), ln=u32(e+12), base=strBase+off;
+    const strs=[]; let cur=[];
+    for(let i=0;i+1<ln;i+=2){ const ci=dv.getUint16(base+i,true); if(ci===0){ strs.push(cur); cur=[]; } else cur.push(ci); }
+    tables.push(strs);
   }
-  return res;
+  entryCount=tables[0].length;
+  tablesOrig=tables.map(tab=>tab.map(s=>s.slice()));
 }
-function buildLangIndex(){
-  slotsByLang={};
-  for(const t of LANG_ORDER) slotsByLang[t]=rawSlots(t);
-  const counts=LANG_ORDER.map(t=>slotsByLang[t].length);
-  entryCount=counts[0];
-  aligned = counts.every(c=>c===entryCount && c>0);
-}
-function textAt(addr,span){
-  let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=dv.getUint16(p,true); if(ci===0)break; s+=(decChar(ci)??'·');} return s;
-}
-function origTextAt(addr,span){
-  let s=''; for(let p=addr;p<addr+span-1;p+=2){const ci=original[p]|(original[p+1]<<8); if(ci===0)break; s+=(decChar(ci)??'·');} return s;
-}
-function isChanged(addr,span){
-  for(let p=addr;p<addr+span;p++) if(bytes[p]!==original[p]) return true;
+function isEntryChanged(t,idx){
+  const a=tables[t][idx], b=tablesOrig[t][idx];
+  if(!a||!b||a.length!==b.length) return true;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return true;
   return false;
 }
-const looksTexty = t => /[A-Za-z0-9ÉÇÊÑ]/.test(t);
 
-// ---------- édition ----------
-function encodeName(newText, span){
-  const codes=[];
-  for(const ch of newText){
-    const c=encChar(ch);
-    if(c===null) throw new Error('Caractère non géré : "'+ch+'". (Lettres A–Z, chiffres, espace, É Ç Ê Ñ, apostrophe.)');
-    codes.push(c);
-  }
-  if(codes.length*2+2 > span) throw new Error('Trop long : '+codes.length+' caractères (maximum '+(span/2-1)+').');
-  return codes;
+// ---------- repack longueur variable ----------
+function buildStringsArchive(){
+  const n=9, headerSize=16+n*16;
+  const blobs=tables.map(strs=>{
+    let len=0; for(const s of strs) len+=s.length*2+2;
+    const ba=new Uint8Array(len); const d=new DataView(ba.buffer); let p=0;
+    for(const s of strs){ for(const c of s){ d.setUint16(p,c&0xFFFF,true); p+=2; } d.setUint16(p,0,true); p+=2; }
+    return ba;
+  });
+  let total=headerSize; for(const b of blobs) total+=b.length;
+  const out=new Uint8Array(total); const d=new DataView(out.buffer);
+  d.setUint32(0,ARC2,true); d.setUint32(12,n,true);
+  let cur=headerSize;
+  for(let t=0;t<n;t++){ const e=16+t*16;
+    d.setUint32(e+0,0,true); d.setUint32(e+4,cur,true);
+    d.setUint32(e+8,blobs[t].length,true); d.setUint32(e+12,blobs[t].length,true);
+    out.set(blobs[t],cur); cur+=blobs[t].length; }
+  d.setUint32(8,total-16,true);
+  let s=0; for(let o=8;o<total;o++) s=(s+out[o])>>>0; d.setUint32(4,s>>>0,true);
+  return out;
 }
-function writeName(addr, span, codes){
-  let p=addr;
-  for(const c of codes){ dv.setUint16(p,c,true); p+=2; }
-  for(; p<addr+span; p++) bytes[p]=0;
-}
-function fixChecksums(arr){
-  const d=new DataView(arr.buffer);
-  const u=o=>d.getUint32(o,true);
-  if(u(MAIN)!==ARC2) return;
-  const nfM=u(MAIN+12);
-  const locS=()=>{ for(let k=0;k<nfM;k++){const sub=MAIN+u(MAIN+16+k*16+4); if(u(sub)===ARC2&&u(sub+12)===9)return sub;} };
-  const cend=base=>{const nf=u(base+12);let e=0;for(let k=0;k<nf;k++){const x=base+16+k*16;e=Math.max(e,u(x+4)+u(x+12));}return e;};
-  const STR=locS();
-  let s=0,se=cend(STR); for(let o=STR+8;o<STR+se;o++) s=(s+arr[o])>>>0; d.setUint32(STR+4,s>>>0,true);
-  let m=0,me=cend(MAIN); for(let o=MAIN+8;o<MAIN+me;o++) m=(m+arr[o])>>>0; d.setUint32(MAIN+4,m>>>0,true);
+function repack(){
+  const newStr=buildStringsArchive();
+  const fk=strFileIdx;
+  const strOff=u32(MAIN+16+fk*16+4), strOldLen=u32(MAIN+16+fk*16+12), strAbs=MAIN+strOff;
+  if(strOff+strOldLen!==contentEnd(MAIN)) throw new Error("L'archive Strings n'est pas le dernier fichier de l'archive principale.");
+  const tail=bytes.slice(strAbs+strOldLen), head=bytes.slice(0,strAbs);
+  let out=new Uint8Array(head.length+newStr.length+tail.length);
+  out.set(head,0); out.set(newStr,head.length); out.set(tail,head.length+newStr.length);
+  const od=new DataView(out.buffer);
+  od.setUint32(MAIN+16+fk*16+8, newStr.length, true);
+  od.setUint32(MAIN+16+fk*16+12, newStr.length, true);
+  const newMainEnd=strOff+newStr.length;
+  od.setUint32(MAIN+8, newMainEnd-16, true);
+  let s=0; for(let o=MAIN+8;o<MAIN+newMainEnd;o++) s=(s+out[o])>>>0; od.setUint32(MAIN+4, s>>>0, true);
+  if(out.length<0x1000000){ const p=new Uint8Array(0x1000000); p.set(out); p.fill(0xFF,out.length); out=p; }
+  else if(out.length>0x1000000){ out=out.slice(0,0x1000000); }
+  return out;
 }
 
 // ---------- UI ----------
-function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+kind; if(!txt) el.className='msg'; }
-function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
-function countChanged(){
-  let n=0;
-  for(const t of LANG_ORDER) for(const s of slotsByLang[t]||[]) if(isChanged(s.addr,s.span)) n++;
-  return n;
-}
-function refreshCounts(){
-  const n=countChanged();
-  $('changeCount').textContent = n+' modification'+(n>1?'s':'');
-  $('dlBtn').disabled = n===0;
-}
+function showMsg(el,txt,kind){ el.textContent=txt; el.className='msg '+(kind||''); if(!txt) el.className='msg'; }
+function countChanged(){ let n=0; for(let t=0;t<9;t++) for(let i=0;i<tables[t].length;i++) if(isEntryChanged(t,i)) n++; return n; }
+function refreshCounts(){ const n=countChanged(); $('changeCount').textContent=n+' modification'+(n>1?'s':''); $('dlBtn').disabled=n===0; }
+
 function render(){
   const q=$('search').value.trim().toUpperCase();
   const list=$('list'); list.innerHTML='';
-  const ref=slotsByLang[curTable]||[];
+  const ref=tables[curTable]||[];
+  const latin=isLatinTable(curTable);
   let shown=0;
-  ref.forEach((s,ord)=>{
-    const now=textAt(s.addr,s.span);
-    if(!looksTexty(now)) return;
-    if(q && !now.toUpperCase().includes(q)) return;
+  ref.forEach((codes,ord)=>{
+    if(latin && (!looksTexty(codes) || codes.length===0)) return;       // masque l'entrée d'offsets
+    if(!latin && ord===0) return;
+    if(q){ const disp=codesToDisplay(codes); if(!disp.toUpperCase().includes(q)) return; }
     shown++;
-    const maxc=s.span/2-1;
-    const changedHere = aligned
-      ? LANG_ORDER.some(t=>isChanged(slotsByLang[t][ord].addr, slotsByLang[t][ord].span))
-      : isChanged(s.addr,s.span);
+    const changedHere = LANG_ORDER.some(t=>isEntryChanged(t,ord));
+    const len=codes.filter(c=>c!==0).length;
     const row=document.createElement('div');
     row.className='item'+(changedHere?' changed':'');
-    row.innerHTML =
-      '<span class="idx">#'+ord+'</span>'+
-      '<span class="name">'+escapeHtml(now)+(isChanged(s.addr,s.span)?'<span class="was">'+escapeHtml(origTextAt(s.addr,s.span))+'</span>':'')+'</span>'+
-      '<span class="badge">max '+maxc+'</span>';
+    const idx=document.createElement('span'); idx.className='idx'; idx.textContent='#'+ord;
+    const gl=document.createElement('span'); gl.className='glyphs'; gl.appendChild(Font.renderCodes(codes,1.6));
+    const bd=document.createElement('span'); bd.className='badge '+(latin?'':'gray'); bd.textContent=len+' car.';
+    row.append(idx,gl,bd);
     row.onclick=()=>openEditor(row,ord);
     list.appendChild(row);
   });
-  $('listFoot').textContent = shown+' / '+ref.length+' textes affichés'+(aligned?' · édition multi-langues active':' · ⚠️ langues non alignées : édition mono-langue');
+  $('listFoot').textContent = shown+' / '+ref.length+' textes — '+(LANG_NAMES[curTable]||('table '+curTable))+' · longueur illimitée · glyphes rendus depuis la police de la console';
   refreshCounts();
 }
 
+let pickerTarget=null;   // input actif pour le sélecteur
 function openEditor(row, ord){
   row.onclick=null; row.className='item editing'; row.innerHTML='';
   const panel=document.createElement('div'); panel.className='mlpanel';
-
   const head=document.createElement('div'); head.className='mlhead';
-  const title=document.createElement('span'); title.className='mltitle';
-  title.textContent = aligned ? ('Entrée #'+ord+' — toutes les langues') : ('Entrée #'+ord+' — '+(LANG_NAMES[curTable]||('table '+curTable)));
-  head.appendChild(title);
-  panel.appendChild(head);
+  const title=document.createElement('span'); title.className='mltitle'; title.textContent='Entrée #'+ord+' — toutes les langues';
+  head.appendChild(title); panel.appendChild(head);
 
-  const tables = aligned ? LANG_ORDER : [curTable];
-  let lastFocused=null;
-  const fields=[];
-  tables.forEach(t=>{
-    const slot=slotsByLang[t][ord];
-    const maxc=slot.span/2-1;
-    const cur=textAt(slot.addr,slot.span);
-
+  let lastFocused=null; const fields=[];
+  LANG_ORDER.forEach(t=>{
+    const codes=tables[t][ord]||[];
+    const cur=codesToDisplay(codes);
+    const latin=isLatinTable(t);
     const r=document.createElement('div'); r.className='mlrow';
     const lab=document.createElement('span'); lab.className='mllabel'; lab.textContent=LANG_NAMES[t]||('table '+t);
-    const inp=document.createElement('input'); inp.type='text'; inp.value=cur; inp.maxLength=maxc; inp.spellcheck=false;
+    const prev=document.createElement('span'); prev.className='mlprev';
+    const drawPrev=(txt)=>{ prev.innerHTML=''; try{ prev.appendChild(Font.renderCodes(displayToCodes(txt),2)); }catch(e){ prev.textContent='⚠'; } };
+    const inp=document.createElement('input'); inp.type='text'; inp.value=cur; inp.spellcheck=false;
+    if(!latin) inp.classList.add('nonlatin');
     const cnt=document.createElement('span'); cnt.className='cnt';
-    const upd=()=>{ cnt.textContent=inp.value.length+' / '+maxc; r.classList.toggle('dirty', inp.value.toUpperCase()!==cur.toUpperCase()); };
-    inp.oninput=upd; inp.onfocus=()=>lastFocused=inp; upd();
+    const upd=()=>{ cnt.textContent=[...inp.value].length+' car.'; r.classList.toggle('dirty', inp.value!==cur); drawPrev(inp.value); };
+    inp.oninput=upd; inp.onfocus=()=>{lastFocused=inp; pickerTarget=inp;}; upd();
     inp.onkeydown=e=>{ if(e.key==='Enter')commit(); if(e.key==='Escape')render(); };
-    r.append(lab,inp,cnt); panel.appendChild(r);
-    fields.push({t, slot, inp, cur});
+    r.append(lab,prev,inp);
+    if(!latin){ const pk=document.createElement('button'); pk.className='btn-ghost btn-sm'; pk.textContent='🔤'; pk.title='Sélecteur de glyphes';
+      pk.onclick=()=>{ pickerTarget=inp; inp.focus(); openPicker(); }; r.appendChild(pk); }
+    r.append(cnt); panel.appendChild(r);
+    fields.push({t, inp, cur, latin});
   });
 
   const acc=document.createElement('div'); acc.className='accents';
-  ['É','Ê','Ç','Ñ',"'"].forEach(a=>{ if(!(a in ENC)) return;
-    const b=document.createElement('button'); b.type='button'; b.textContent=a; b.title='Insérer '+a;
-    b.onclick=()=>{ const inp=lastFocused||fields[0].inp; const p=inp.selectionStart??inp.value.length;
-      inp.value=inp.value.slice(0,p)+a+inp.value.slice(inp.selectionEnd??p); inp.focus(); inp.dispatchEvent(new Event('input')); };
-    acc.appendChild(b);
+  ['É','Ê','Ç','Ñ',"'",'⏎'].forEach(a=>{
+    const b=document.createElement('button'); b.type='button'; b.textContent=(a==='⏎'?'⏎ saut':a);
+    b.onclick=()=>insertAtCursor(lastFocused||fields[0].inp, a); acc.appendChild(b);
   });
   panel.appendChild(acc);
 
@@ -312,68 +416,75 @@ function openEditor(row, ord){
   const save=document.createElement('button'); save.className='btn-teal'; save.textContent='OK';
   const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Annuler';
   actions.append(save,cancel); panel.appendChild(actions);
-
   row.appendChild(panel);
-  fields[0].inp.focus(); fields[0].inp.select(); lastFocused=fields[0].inp;
+  fields[0].inp.focus(); fields[0].inp.select(); lastFocused=fields[0].inp; pickerTarget=fields[0].inp;
 
   function commit(){
-    // valider toutes les langues modifiées avant d'écrire quoi que ce soit
     const ops=[];
     try{
       for(const f of fields){
-        const nv=f.inp.value.toUpperCase();
-        if(nv===f.cur.toUpperCase()) continue;       // langue non touchée -> on n'y touche pas
-        const codes=encodeName(nv, f.slot.span);
-        ops.push({slot:f.slot, codes});
+        let nv=f.inp.value; if(nv===f.cur) continue;
+        if(f.latin) nv=nv.toUpperCase();
+        ops.push({t:f.t, codes:displayToCodes(nv)});
       }
     }catch(e){ showMsg($('editMsg'),e.message,'err'); return; }
-    for(const op of ops) writeName(op.slot.addr, op.slot.span, op.codes);
-    showMsg($('editMsg'), ops.length? ('✅ '+ops.length+' langue'+(ops.length>1?'s':'')+' mise'+(ops.length>1?'s':'')+' à jour pour cette entrée.') : '', ops.length?'ok':'');
+    for(const op of ops) tables[op.t][ord]=op.codes;
+    showMsg($('editMsg'), ops.length? ('✅ '+ops.length+' langue'+(ops.length>1?'s':'')+' mise'+(ops.length>1?'s':'')+' à jour.') : '', ops.length?'ok':'');
     render();
   }
-  save.onclick=commit;
-  cancel.onclick=()=>{ showMsg($('editMsg'),'',''); render(); };
+  save.onclick=commit; cancel.onclick=()=>{ showMsg($('editMsg'),'',''); render(); };
+}
+function insertAtCursor(inp,txt){
+  const p=inp.selectionStart??inp.value.length, e=inp.selectionEnd??p;
+  inp.value=inp.value.slice(0,p)+txt+inp.value.slice(e);
+  inp.focus(); inp.selectionStart=inp.selectionEnd=p+txt.length;
+  inp.dispatchEvent(new Event('input'));
 }
 
-function loadTable(){
-  curTable=parseInt($('lang').value,10);
-  render();
+// ---------- sélecteur de glyphes ----------
+let pkPage=0; const PK_PER=120;
+function renderPicker(){
+  const grid=$('pgrid'); grid.innerHTML='';
+  const start=Math.max(1,pkPage*PK_PER), end=Math.min(pkPage*PK_PER+PK_PER, Font.nsub+1);
+  for(let code=start; code<end; code++){
+    const cell=document.createElement('div'); cell.className='gcell'; cell.title='code 0x'+code.toString(16).toUpperCase();
+    cell.appendChild(Font.renderCodes([code],2));
+    const s=document.createElement('span'); s.textContent=code.toString(16).toUpperCase().padStart(4,'0'); cell.appendChild(s);
+    cell.onclick=()=>{ if(pickerTarget) insertAtCursor(pickerTarget, '⟨'+code.toString(16).toUpperCase().padStart(4,'0')+'⟩'); };
+    grid.appendChild(cell);
+  }
+  $('pkInfo').textContent='glyphes 0x'+start.toString(16).toUpperCase()+'–0x'+(end-1).toString(16).toUpperCase()+' / '+Font.nsub;
 }
+function openPicker(){ $('overlay').classList.add('open'); renderPicker(); }
+function closePicker(){ $('overlay').classList.remove('open'); }
 
 // ---------- chargement ----------
 async function handleFile(f){
   try{
     fileName=f.name||"paradise.bin";
     const buf=await f.arrayBuffer();
-    bytes=new Uint8Array(buf);
-    original=bytes.slice();
-    dv=new DataView(bytes.buffer);
-    const STR=locateStrings(); // valide le format
-    buildLangIndex();
+    bytes=new Uint8Array(buf); dv=new DataView(bytes.buffer);
+    strBase=locateStrings(); parseTables(); Font.locate();
+    const sel=$('lang'); sel.innerHTML='';
+    for(const t of LANG_ORDER){ const o=document.createElement('option'); o.value=t; o.textContent=LANG_NAMES[t]+(t===2?' (ta console)':''); sel.appendChild(o); }
+    sel.value='2'; curTable=2;
     $('fileInfo').textContent='📦 '+fileName+' ('+(bytes.length/1048576).toFixed(1)+' Mo)';
-    $('archInfo').textContent='archive textes @0x'+STR.toString(16).toUpperCase()+' · '+entryCount+' entrées'+(aligned?'':' (non alignées)');
-    $('loadMsg').className='msg';
-    $('editor').style.display='block';
-    $('loadCard').style.display='none';
-    showMsg($('editMsg'),'','');
-    loadTable();
-  }catch(e){
-    showMsg($('loadMsg'), (e&&e.message)||'Fichier illisible.', 'err');
-  }
+    $('archInfo').textContent='textes @0x'+strBase.toString(16).toUpperCase()+' · '+entryCount+' entrées × 9 langues · police '+Font.nsub+' glyphes';
+    $('loadMsg').className='msg'; $('editor').style.display='block'; $('loadCard').style.display='none';
+    showMsg($('editMsg'),'',''); curTable=2; render();
+  }catch(e){ showMsg($('loadMsg'), (e&&e.message)||'Fichier illisible.', 'err'); }
 }
 
-// download
+// ---------- téléchargement ----------
 function download(){
-  const out=bytes.slice();
-  fixChecksums(out);
+  let out;
+  try{ out=repack(); } catch(e){ showMsg($('editMsg'), 'Erreur de ré-empaquetage : '+e.message, 'err'); return; }
   const base=fileName.replace(/\.bin$/i,'');
   const blob=new Blob([out],{type:'application/octet-stream'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=base+'-RENOMME.bin';
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=base+'-RENOMME.bin';
   document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
-  showMsg($('editMsg'),'✅ Fichier généré (checksums recalculés). Flashe-le avec Asprogrammer.','ok');
+  showMsg($('editMsg'),'✅ Fichier généré (archive ré-empaquetée, checksums recalculés). Flashe-le avec Asprogrammer.','ok');
 }
 
 // ---------- wire up ----------
@@ -383,10 +494,15 @@ fileInput.onchange=e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); };
 ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
 drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
-$('lang').onchange=loadTable;
+$('lang').onchange=()=>{ curTable=parseInt($('lang').value,10); render(); };
 $('search').oninput=render;
 $('dlBtn').onclick=download;
-$('resetBtn').onclick=()=>{ if(!original)return; bytes.set(original); showMsg($('editMsg'),'',''); render(); };
+$('resetBtn').onclick=()=>{ if(!tablesOrig.length)return; tables=tablesOrig.map(tab=>tab.map(s=>s.slice())); showMsg($('editMsg'),'',''); render(); };
+$('pkClose').onclick=closePicker;
+$('overlay').onclick=e=>{ if(e.target===$('overlay')) closePicker(); };
+$('pkPrev').onclick=()=>{ if(pkPage>0){ pkPage--; renderPicker(); } };
+$('pkNext').onclick=()=>{ if((pkPage+1)*PK_PER<Font.nsub){ pkPage++; renderPicker(); } };
+$('pkSearch').oninput=e=>{ const v=parseInt(e.target.value,16); if(!isNaN(v)&&v>=0&&v<Font.nsub){ pkPage=(v/PK_PER)|0; renderPicker(); } };
 </script>
 </body>
 </html>

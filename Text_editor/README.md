@@ -5,21 +5,49 @@
 The text editor lets you rename all text in the firmware:
 - Characters (MAMETCHI → GAETAN, etc.)
 - Objects (HAT IRUKATCHI → CUSTOM HAT, etc.)
-- Localizations (the script supports all 6 in-game languages)
+- Localizations (all **9** in-game languages, including the non-Latin ones)
 
 What it does automatically:
 1. Locates the text archive in the firmware (it's relocated in different versions, the script finds it)
 2. Handles the custom charset (the game doesn't use ASCII: characters have their own codes)
-3. Recalculates checksums (two archives need verification sums)
-4. Produces a firmware ready to flash
+3. **Repacks** the whole text archive so a new name can be **longer or shorter** than the original — no more length limit
+4. Recalculates checksums (two archives need verification sums)
+5. Produces a firmware ready to flash
 
-The HTML interface shows available space (max 15c = 15 characters max) and prevents you from typing too much. Compared to just using Python CLI, this is helpful.
+**No length limit anymore.** Earlier versions forced the new name to fit inside the old slot (the "max 15c" rule). The editor now rebuilds the text archive: it's the last file of the main archive, so it grows into the free space (0xFF region) that follows, without moving any other file. The badge just shows the current length, not a maximum.
 
 ## How we found it
 
 The firmware contains a standard archive (Sonix ARC2 format: signature 0x32435241). We located it at 0x111000 first (known address).
 
-This main archive contains 9 files (the 9 game translations: EN, FR, DE, PT, ES, IT, plus variants). Each is itself an ARC2 archive.
+This main archive contains 9 files — the **9 game languages**. By internal table index:
+
+| Index | Language | Script |
+|---|---|---|
+| 0 | Japanese (日本語) | non-Latin |
+| 1 | English | Latin |
+| 2 | French | Latin |
+| 3 | German | Latin |
+| 4 | Portuguese | Latin |
+| 5 | Spanish | Latin |
+| 6 | Italian | Latin |
+| 7 | Chinese (中文) | non-Latin |
+| 8 | Korean (한국어) | non-Latin |
+
+Each is itself an ARC2 archive. (Earlier notes only listed the 6 Latin languages; tables 0/7/8 are the non-Latin ones.)
+
+### Non-Latin languages (Japanese / Chinese / Korean)
+
+These use a custom font where each character is a **glyph index** with **no Unicode relationship**. The editor now **decodes the device font and renders the real glyphs** — the list and the per-language preview show JP/ZH/KO exactly as they appear on the console.
+
+To edit a non-Latin entry:
+- the **glyph picker** 🔤 opens a searchable grid of every glyph in the font (rendered); click one to insert it,
+- internally each glyph is stored as a `⟨XXXX⟩` token (its hex glyph code), so the text stays lossless,
+- the live preview redraws as you type/insert,
+- Latin characters can also be typed (they map to font glyphs too),
+- the repack keeps every untouched string **byte-for-byte intact**.
+
+See the technical note at the bottom for how the font is decoded.
 
 The game doesn't use ASCII. Codes are 16-bit (2 bytes) and map to:
 - 0x00FD + ASCII for A–Z, digits, punctuation
@@ -108,7 +136,7 @@ Change language:
 python text-editor.py mydump.bin --language 1 "MAMETCHI" "GAETAN"
 ```
 
-Languages: 1=EN, 2=FR (default), 3=DE, 4=PT, 5=ES, 6=IT
+Languages: 0=JP, 1=EN, 2=FR (default), 3=DE, 4=PT, 5=ES, 6=IT, 7=ZH, 8=KO
 
 Custom output file:
 ```bash
@@ -196,7 +224,7 @@ Checksums:
 - Two checksums to recalculate: text archive plus main archive
 - The script does this automatically
 
-Language IDs: 1=EN, 2=FR, 3=DE, 4=PT, 5=ES, 6=IT
+Language IDs: 0=JP, 1=EN, 2=FR, 3=DE, 4=PT, 5=ES, 6=IT, 7=ZH, 8=KO
 
 ---
 
@@ -398,4 +426,24 @@ Checksums :
 - Deux checksums a recalculer : archive textes plus archive principale
 - Le script le fait automatiquement
 
-Language IDs : 1=EN, 2=FR, 3=DE, 4=PT, 5=ES, 6=IT
+Language IDs : 0=JP, 1=EN, 2=FR, 3=DE, 4=PT, 5=ES, 6=IT, 7=ZH, 8=KO
+
+---
+
+## Technical note — how the device font is decoded (solved)
+
+Latin characters map trivially (`glyph_id = 0x00FD + ASCII`). The non-Latin languages (JP/ZH/KO) use opaque glyph indices (codes up to ~`0x256D`) with **no Unicode mapping**, so they are drawn from the device's own bitmap font. The editor decodes that font and renders the glyphs directly.
+
+The font (Sky firmware):
+- It lives **inside the Sprites package** (`file1` of the main ARC2), as the sub-sprite set with the most frames: sprite **#15** at `0x1AEC5C` — **`nsub = 9642`** sub-glyphs (≈ the maximum glyph code), each **16 × 16 at 2 bpp**, `flags = 0xA7` (RLE bytewise `0x20` + XOR `0x53` `0x80`). A second smaller set (sprite #14, `nsub = 2830`) is a size variant. The editor auto-locates it (largest 16×16 sub-sprite in the package).
+- Format reference (GMMan): <https://github.com/GMMan/tama-para-research/blob/master/formats/sprites.md>.
+
+Decode procedure for glyph of text code `C` (codes are **1-based** — `0` is the string terminator — so the sub-sprite index is `C-1`):
+1. read the sub-table entry at `pixel_data_offset + (C-1)*8` → `[offset u32][length u32]` (bit 31 of offset = "stored uncompressed");
+2. take the `length` stored bytes and **XOR each with `0x53` first**;
+3. then **RLE-decompress** (bytewise: control byte, top bit set ⇒ copy `n` literals, top bit clear ⇒ repeat next byte `n` times, `0` ⇒ stop) → exactly **64 bytes**;
+4. interpret as 16×16 **2 bpp**, reading 2-bit pixels **LSB-first** within each byte, left-to-right, top-to-bottom.
+
+The key subtlety that makes it work: **XOR before RLE, not after** (the "encrypted as stored" wording). With XOR-first, all 9642 glyphs decode to a clean 64-byte canvas; verified against the Latin glyphs (`A`, digits render correctly) and the JP/ZH/KO biome words.
+
+`text-editor.html` implements this decoder (`Font` module) to render glyphs in the list, the editor previews, and the glyph picker. Each non-Latin character is stored as a `⟨XXXX⟩` token so edits remain lossless.
